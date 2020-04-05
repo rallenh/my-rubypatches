@@ -10,7 +10,7 @@ Make sure there's no ruby.exe in the path.
 Most of this is modeled with/after what Fedora is doing, including their
 ./configure and CFLAGS/CXXFLAGS/LDFLAGS.
 
-Ruby 2.4.9
+Ruby 2.4.10
 1. Generate single patch file:
 wget https://cache.ruby-lang.org/pub/ruby/2.4/ruby-2.4.10.tar.gz;
 tar -zxvf ruby-2.4.10.tar.gz;
@@ -35,11 +35,11 @@ diff -Nuarp ruby-2.4.10.a ruby-2.4.10.b > ruby-2.4.10-fedora-cygwin-railsexpress
 rm -rf ruby-2.4.10.a ruby-2.4.10.b;
 rm -rf ruby-2.4.10.tar.gz;
 
-3. run ruby-install with single patch file:
+2. run ruby-install with single patch file:
 don't need b/c we aren't cross building
   --target=x86_64-pc-cygwin \
 don't need b/c ruby-install sets this
-  --prefix=/opt/rubies/ruby-2.5.7 \
+  --prefix=/opt/rubies/ruby-2.4.10 \
 
 env ruby_version=2.4.10 \
 ruby-install \
