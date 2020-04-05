@@ -1,0 +1,11 @@
+diff -Nuarp ruby-2.4.9.a/lib/rubygems.rb ruby-2.4.9.b/lib/rubygems.rb
+--- ruby-2.4.9.a/lib/rubygems.rb	2019-10-02 01:02:17.000000000 -0400
++++ ruby-2.4.9.b/lib/rubygems.rb	2020-04-04 01:17:24.698240000 -0400
+@@ -121,7 +121,6 @@ module Gem
+ 
+   WIN_PATTERNS = [
+     /bccwin/i,
+-    /cygwin/i,
+     /djgpp/i,
+     /mingw/i,
+     /mswin/i,

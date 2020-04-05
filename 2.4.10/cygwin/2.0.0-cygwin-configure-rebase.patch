@@ -1,0 +1,30 @@
+diff -Nuarp ruby-2.4.9.a/configure.in ruby-2.4.9.b/configure.in
+--- ruby-2.4.9.a/configure.in	2020-04-04 01:07:13.309274000 -0400
++++ ruby-2.4.9.b/configure.in	2020-04-04 01:13:07.454707400 -0400
+@@ -3648,7 +3648,7 @@ else
+     [darwin*], [
+ 	RUBY_APPEND_OPTION(XLDFLAGS, [-Wl,-u,_objc_msgSend])
+ 	DLEXT=bundle],
+-    [cygwin*|mingw*|*djgpp*], [
++    [mingw*|*djgpp*], [
+ 	LOAD_RELATIVE=1
+ 	DLEXT=so],
+     [
+@@ -3964,7 +3964,7 @@ AS_CASE("$enable_shared", [yes], [
+     [interix*], [
+ 	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
+ 	],
+-    [mingw*|cygwin*|mswin*], [
++    [mingw*|mswin*], [
+ 	LIBRUBY_RELATIVE=yes
+ 	])
+ ], [
+@@ -4376,7 +4376,7 @@ test "$program_suffix" != NONE &&
+ 
+ RUBY_INSTALL_NAME="${ri_prefix}"'$(RUBY_BASE_NAME)'"${ri_suffix}"
+ AS_CASE(["$target_os"],
+-  [cygwin*|mingw*], [
++  [mingw*], [
+     RUBYW_INSTALL_NAME="${ri_prefix}"'$(RUBYW_BASE_NAME)'"${ri_suffix}"
+     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
+     ])

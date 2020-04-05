@@ -1,0 +1,20 @@
+diff -Nuarp ruby-2.4.9.a/test/ruby/test_io.rb ruby-2.4.9.b/test/ruby/test_io.rb
+--- ruby-2.4.9.a/test/ruby/test_io.rb	2019-10-02 01:02:17.000000000 -0400
++++ ruby-2.4.9.b/test/ruby/test_io.rb	2020-04-04 01:09:35.187356100 -0400
+@@ -3564,7 +3564,7 @@ __END__
+   end
+ 
+   def test_select_leak
+-    assert_no_memory_leak([], <<-"end;", <<-"end;", rss: true, timeout: 60)
++    assert_no_memory_leak([], <<-"end;", <<-"end;", rss: true, timeout: 240)
+       r, w = IO.pipe
+       rset = [r]
+       wset = [w]
+@@ -3575,6 +3575,7 @@ __END__
+         Thread.pass until th.stop?
+         th.kill
+         th.join
++        GC.start
+       end
+     end;
+   end
