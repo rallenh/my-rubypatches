@@ -1,0 +1,1279 @@
+diff -Nuarp ruby-2.3.8.a/ChangeLog ruby-2.3.8.b/ChangeLog
+--- ruby-2.3.8.a/ChangeLog	2018-10-17 11:34:06.000000000 -0400
++++ ruby-2.3.8.b/ChangeLog	2020-04-05 01:56:04.582145100 -0400
+@@ -1580,13 +1580,6 @@ Sun Apr 30 22:35:10 2017  Nobuyoshi Naka
+ 	  to check if no library is required, instead of AC_CHECK_LIB.
+ 	  [ruby-core:79368] [Bug #13175]
+ 
+-Sun Apr 30 22:24:25 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+-
+-	* numeric.c (flo_round): [EXPERIMENTAL] adjust the case that the
+-	  receiver is close to the exact but unrepresentable middle value
+-	  of two values in the given precision.
+-	  http://d.hatena.ne.jp/hnw/20160702
+-
+ Sun Apr  9 22:21:23 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+ 
+ 	thread.c: rb_thread_fd_close [ci skip]
+diff -Nuarp ruby-2.3.8.a/common.mk ruby-2.3.8.b/common.mk
+--- ruby-2.3.8.a/common.mk	2018-03-28 01:30:24.000000000 -0400
++++ ruby-2.3.8.b/common.mk	2020-04-05 01:56:03.962901200 -0400
+@@ -127,7 +127,7 @@ ALLOBJS       = $(NORMALMAINOBJ) $(MINIO
+ GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
+ 
+ DEFAULT_PRELUDES = $(GEM_PRELUDE)
+-PRELUDE_SCRIPTS = $(srcdir)/prelude.rb $(srcdir)/enc/prelude.rb $(DEFAULT_PRELUDES)
++PRELUDE_SCRIPTS = $(srcdir)/prelude.rb $(srcdir)/enc/prelude.rb $(DEFAULT_PRELUDES) $(OPTIONAL_PRELUDES)
+ GEM_PRELUDE   = $(srcdir)/gem_prelude.rb
+ PRELUDES      = {$(srcdir)}prelude.c {$(srcdir)}miniprelude.c
+ GOLFPRELUDES  = {$(srcdir)}golf_prelude.c
+@@ -839,9 +839,9 @@ $(MINIPRELUDE_C): $(COMPILE_PRELUDE)
+ $(PRELUDE_C): $(COMPILE_PRELUDE) \
+ 	   {$(srcdir)}lib/rubygems/defaults.rb \
+ 	   {$(srcdir)}lib/rubygems/core_ext/kernel_gem.rb \
+-	   $(PRELUDE_SCRIPTS) $(LIB_SRCS)
++	   $(PRELUDE_SCRIPTS) $(PREP) $(LIB_SRCS)
+ 	$(ECHO) generating $@
+-	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -c -o $@ \
++	$(Q) $(MINIRUBY) $(srcdir)/tool/generic_erb.rb -I$(srcdir) -c -o $@ \
+ 		$(srcdir)/template/prelude.c.tmpl $(PRELUDE_SCRIPTS)
+ 
+ {$(VPATH)}golf_prelude.c: $(COMPILE_PRELUDE) {$(srcdir)}golf_prelude.rb
+diff -Nuarp ruby-2.3.8.a/configure.in ruby-2.3.8.b/configure.in
+--- ruby-2.3.8.a/configure.in	2018-03-18 10:15:27.000000000 -0400
++++ ruby-2.3.8.b/configure.in	2020-04-05 01:56:05.566182200 -0400
+@@ -275,7 +275,7 @@ RUBY_BASE_NAME=`echo ruby | sed "$progra
+ RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
+ AC_SUBST(RUBY_BASE_NAME)
+ AC_SUBST(RUBYW_BASE_NAME)
+-AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version}')
++AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version_dir_name}')
+ 
+ AC_CANONICAL_TARGET
+ test x"$target_alias" = x &&
+@@ -3503,7 +3503,7 @@ else
+     [darwin*], [
+ 	RUBY_APPEND_OPTION(XLDFLAGS, [-Wl,-u,_objc_msgSend])
+ 	DLEXT=bundle],
+-    [cygwin*|mingw*|*djgpp*], [
++    [mingw*|*djgpp*], [
+ 	LOAD_RELATIVE=1
+ 	DLEXT=so],
+     [
+@@ -3686,6 +3686,11 @@ if test ${multiarch+set}; then
+ fi
+ 
+ archlibdir='${libdir}/${arch}'
++AC_ARG_WITH(archlibdir,
++	    AS_HELP_STRING([--with-archlibdir=DIR],
++			   [prefix for libruby [[LIBDIR/ARCH]]]),
++	    [archlibdir="$withval"])
++
+ sitearchlibdir='${libdir}/${sitearch}'
+ archincludedir='${includedir}/${arch}'
+ sitearchincludedir='${includedir}/${sitearch}'
+@@ -3814,7 +3819,7 @@ AS_CASE("$enable_shared", [yes], [
+     [interix*], [
+ 	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
+ 	],
+-    [mingw*|cygwin*|mswin*], [
++    [mingw*|mswin*], [
+ 	LIBRUBY_RELATIVE=yes
+ 	])
+ ], [
+@@ -4220,14 +4225,11 @@ test "$program_suffix" != NONE &&
+ 
+ RUBY_INSTALL_NAME="${ri_prefix}"'$(RUBY_BASE_NAME)'"${ri_suffix}"
+ AS_CASE(["$target_os"],
+-  [cygwin*|mingw*], [
++  [mingw*], [
+     RUBYW_INSTALL_NAME="${ri_prefix}"'$(RUBYW_BASE_NAME)'"${ri_suffix}"
+     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
+     ])
+ 
+-rubylibdir='${rubylibprefix}/${ruby_version}'
+-rubyarchdir=${multiarch+'${rubyarchprefix}/${ruby_version}'}${multiarch-'${rubylibdir}/${arch}'}
+-
+ rubyarchprefix=${multiarch+'${archlibdir}/${RUBY_BASE_NAME}'}${multiarch-'${rubylibprefix}/${arch}'}
+ AC_ARG_WITH(rubyarchprefix,
+ 	    AS_HELP_STRING([--with-rubyarchprefix=DIR],
+@@ -4250,58 +4252,69 @@ AC_ARG_WITH(ridir,
+ AC_SUBST(ridir)
+ AC_SUBST(RI_BASE_NAME)
+ 
+-AC_ARG_WITH(ruby-version,
+-	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|minor|STR)]),
+-            [ruby_version=$withval],
+-            [ruby_version=full])
+ unset RUBY_LIB_VERSION
+-unset RUBY_LIB_VERSION_STYLE
+-AS_CASE(["$ruby_version"],
+-  [full],  [RUBY_LIB_VERSION_STYLE='3	/* full */'],
+-  [minor], [RUBY_LIB_VERSION_STYLE='2	/* minor */'])
+-if test ${RUBY_LIB_VERSION_STYLE+set}; then
+-    {
+-    echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
+-    echo '#define STRINGIZE(x) x'
+-    test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
+-    echo '#include "verconf.h"'
+-    echo '#include "version.h"'
+-    echo 'ruby_version=RUBY_LIB_VERSION'
+-    } > conftest.c
+-    test -f verconf.h || > verconf.h
+-    ruby_version="`$CPP -I. -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
+-    eval $ruby_version
+-elif test -z "${ruby_version}"; then
+-    AC_MSG_ERROR([No ruby version, No place for bundled libraries])
+-else
+-    RUBY_LIB_VERSION="${ruby_version}"
+-fi
++RUBY_LIB_VERSION_STYLE='3	/* full */'
++{
++echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
++echo '#define STRINGIZE(x) x'
++test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
++echo '#include "verconf.h"'
++echo '#include "version.h"'
++echo 'ruby_version=RUBY_LIB_VERSION'
++} > conftest.c
++test -f verconf.h || > verconf.h
++ruby_version="`$CPP -I. -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
++eval $ruby_version
++
++RUBY_LIB_VERSION="${ruby_version}"
++
+ AC_SUBST(RUBY_LIB_VERSION_STYLE)
+ AC_SUBST(RUBY_LIB_VERSION)
+ 
++AC_ARG_WITH(ruby-version,
++	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|STR)]),
++            [ruby_version_dir_name=$withval],
++            [ruby_version_dir_name=full])
++AS_CASE(["$ruby_version_dir_name"],
++  [full], [ruby_version_dir_name='${ruby_version}'])
++
++ruby_version_dir=/'${ruby_version_dir_name}'
++
++if test -z "${ruby_version_dir_name}"; then
++    unset ruby_version_dir
++    AC_DEFINE(RUBY_LIB_VERSION_BLANK, 1)
++fi
++
++rubylibdir='${rubylibprefix}'${ruby_version_dir}
++rubyarchdir=${multiarch+'${rubyarchprefix}'${ruby_version_dir}}${multiarch-'${rubylibdir}/${arch}'}
++
+ AC_ARG_WITH(sitedir,
+ 	    AS_HELP_STRING([--with-sitedir=DIR], [site libraries in DIR [[RUBY_LIB_PREFIX/site_ruby]], "no" to disable site directory]),
+             [sitedir=$withval],
+             [sitedir='${rubylibprefix}/site_ruby'])
+-sitelibdir='${sitedir}/${ruby_version}'
++sitelibdir='${sitedir}'${ruby_version_dir}
+ 
+ AC_ARG_WITH(sitearchdir,
+ 	    AS_HELP_STRING([--with-sitearchdir=DIR],
+ 			   [architecture dependent site libraries in DIR [[SITEDIR/SITEARCH]], "no" to disable site directory]),
+             [sitearchdir=$withval],
+-            [sitearchdir=${multiarch+'${rubysitearchprefix}/site_ruby/${ruby_version}'}${multiarch-'${sitelibdir}/${sitearch}'}])
++            [sitearchdir=${multiarch+'${rubysitearchprefix}/site_ruby'${ruby_version_dir}}${multiarch-'${sitelibdir}/${sitearch}'}])
+ 
+ AC_ARG_WITH(vendordir,
+ 	    AS_HELP_STRING([--with-vendordir=DIR], [vendor libraries in DIR [[RUBY_LIB_PREFIX/vendor_ruby]], "no" to disable vendor directory]),
+             [vendordir=$withval],
+             [vendordir='${rubylibprefix}/vendor_ruby'])
+-vendorlibdir='${vendordir}/${ruby_version}'
++vendorlibdir='${vendordir}'${ruby_version_dir}
+ 
+ AC_ARG_WITH(vendorarchdir,
+ 	    AS_HELP_STRING([--with-vendorarchdir=DIR],
+ 			   [architecture dependent vendor libraries in DIR [[VENDORDIR/SITEARCH]], "no" to disable vendor directory]),
+             [vendorarchdir=$withval],
+-            [vendorarchdir=${multiarch+'${rubysitearchprefix}/vendor_ruby/${ruby_version}'}${multiarch-'${vendorlibdir}/${sitearch}'}])
++            [vendorarchdir=${multiarch+'${rubysitearchprefix}/vendor_ruby'${ruby_version_dir}}${multiarch-'${vendorlibdir}/${sitearch}'}])
++
++AC_ARG_WITH(rubygemsdir,
++           AS_HELP_STRING([--with-rubygemsdir=DIR], [custom rubygems directory]),
++            [rubygemsdir=$withval])
+ 
+ if test "${LOAD_RELATIVE+set}"; then
+     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
+@@ -4318,6 +4331,7 @@ AC_SUBST(sitearchincludedir)dnl
+ AC_SUBST(arch)dnl
+ AC_SUBST(sitearch)dnl
+ AC_SUBST(ruby_version)dnl
++AC_SUBST(ruby_version_dir_name)dnl
+ AC_SUBST(rubylibdir)dnl
+ AC_SUBST(rubyarchdir)dnl
+ AC_SUBST(sitedir)dnl
+@@ -4326,10 +4340,13 @@ AC_SUBST(sitearchdir)dnl
+ AC_SUBST(vendordir)dnl
+ AC_SUBST(vendorlibdir)dnl
+ AC_SUBST(vendorarchdir)dnl
++AC_SUBST(rubygemsdir)dnl
+ 
+ AC_SUBST(CONFIGURE, "`echo $0 | sed 's|.*/||'`")dnl
+ AC_SUBST(configure_args, "`echo "${ac_configure_args}" | sed 's/\\$/$$/g'`")dnl
+ 
++target_cpu=`echo $target_cpu | sed s/i.86/i386/`
++
+ if test "${universal_binary-no}" = yes ; then
+     arch="universal-${target_os}"
+     if test "${rb_cv_architecture_available}" = yes; then
+@@ -4405,6 +4422,13 @@ AC_SUBST(rubyarchhdrdir)dnl
+ AC_SUBST(sitearchhdrdir)dnl
+ AC_SUBST(vendorarchhdrdir)dnl
+ 
++AC_ARG_WITH(prelude,
++		AS_HELP_STRING([--with-prelude=FILE-LIST], [specify additional preludes separated by space]),
++		[prelude=$withval])
++if test "$prelude" != ""; then
++    AC_SUBST(OPTIONAL_PRELUDES, $prelude)
++fi
++
+ AC_ARG_WITH(mantype,
+ 	AS_HELP_STRING([--with-mantype=TYPE], [specify man page type; TYPE is one of man and doc]),
+ 		[
+diff -Nuarp ruby-2.3.8.a/eval_error.c ruby-2.3.8.b/eval_error.c
+--- ruby-2.3.8.a/eval_error.c	2017-01-16 14:29:32.000000000 -0500
++++ ruby-2.3.8.b/eval_error.c	2020-04-05 01:56:06.920293400 -0400
+@@ -164,8 +164,8 @@ error_print(void)
+         int skip = eclass == rb_eSysStackError;
+ 
+ #define TRACE_MAX (TRACE_HEAD+TRACE_TAIL+5)
+-#define TRACE_HEAD 8
+-#define TRACE_TAIL 5
++#define TRACE_HEAD 100
++#define TRACE_TAIL 100
+ 
+ 	for (i = 1; i < len; i++) {
+ 	    VALUE line = RARRAY_AREF(errat, i);
+diff -Nuarp ruby-2.3.8.a/ext/tk/extconf.rb ruby-2.3.8.b/ext/tk/extconf.rb
+--- ruby-2.3.8.a/ext/tk/extconf.rb	2015-12-16 00:31:54.000000000 -0500
++++ ruby-2.3.8.b/ext/tk/extconf.rb	2020-04-05 01:56:05.244365500 -0400
+@@ -116,7 +116,7 @@ end
+ # fuctions
+ ##############################################################
+ def is_win32?
+-  /mswin|mingw|cygwin|bccwin/ =~ RUBY_PLATFORM
++  /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+ end
+ 
+ def is_macosx?
+@@ -554,6 +554,7 @@ def get_ext_list()
+   exts = [CONFIG['DLEXT']]
+   exts.concat %w(dll) if is_win32?
+   exts.concat %w(bundle dylib) if is_macosx?
++  exts.concat %w(dll.a) if /cygwin/ =~ RUBY_PLATFORM
+ 
+   if TkLib_Config["tcltk-stubs"] || TkLib_Config['enable-shared'] == false
+     exts.unshift "lib" if is_win32?
+@@ -614,7 +615,7 @@ def libcheck_for_tclConfig(tcldir, tkdir
+         #puts "check #{file} #{$1} #{tclfunc} #{tcldir}"
+         #find_library($1, tclfunc, tcldir)
+         if (tclconf && tclconf["TCL_SHARED_BUILD"] == "0") ||
+-            (ext != CONFIG['DLEXT'] && ext == CONFIG['LIBEXT']) || ext == "a"
++            (!tclconf && ((ext != CONFIG['DLEXT'] && ext == CONFIG['LIBEXT']) || ext == "a"))
+           # static link
+           tcllibs = $libs + " -DSTATIC_BUILD " + file.quote
+ 
+@@ -657,7 +658,7 @@ def libcheck_for_tclConfig(tcldir, tkdir
+         #puts "check #{file} #{$1} #{tkfunc} #{tkdir}"
+         # find_library($1, tkfunc, tkdir)
+         if (tkconf && tkconf["TCL_SHARED_BUILD"] == "0") ||
+-            (ext != CONFIG['DLEXT'] && ext == CONFIG['LIBEXT']) || ext == "a"
++            (!tkconf && ((ext != CONFIG['DLEXT'] && ext == CONFIG['LIBEXT']) || ext == "a"))
+           # static link
+           tklibs = " -DSTATIC_BUILD " + file.quote
+ 
+@@ -1823,7 +1824,6 @@ unless is_win32?
+   print("\n") # progress
+ end
+ $CPPFLAGS ||= ""
+-$CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM
+ 
+ # Does ruby have nativethread ?
+ TkLib_Config["ruby_with_thread"] =
+diff -Nuarp ruby-2.3.8.a/ext/tk/stubs.c ruby-2.3.8.b/ext/tk/stubs.c
+--- ruby-2.3.8.a/ext/tk/stubs.c	2014-09-30 01:25:32.000000000 -0400
++++ ruby-2.3.8.b/ext/tk/stubs.c	2020-04-05 01:56:05.254360300 -0400
+@@ -71,7 +71,7 @@ _nativethread_consistency_check(ip)
+ 
+ #if defined USE_TCL_STUBS && defined USE_TK_STUBS
+ 
+-#if defined _WIN32 || defined __CYGWIN__
++#if defined _WIN32
+ #  ifdef HAVE_RUBY_RUBY_H
+ #    include "ruby/util.h"
+ #  else
+@@ -100,6 +100,10 @@ _nativethread_consistency_check(ip)
+ #  undef DLEXT
+ #  define DLEXT ".dylib"
+ # endif
++# if defined(__CYGWIN__)
++#  undef DLEXT
++#  define DLEXT ".dll"
++# endif
+ #endif
+ 
+ static DL_HANDLE tcl_dll = (DL_HANDLE)0;
+diff -Nuarp ruby-2.3.8.a/ext/win32/lib/win32/resolv.rb ruby-2.3.8.b/ext/win32/lib/win32/resolv.rb
+--- ruby-2.3.8.a/ext/win32/lib/win32/resolv.rb	2017-03-27 12:15:52.000000000 -0400
++++ ruby-2.3.8.b/ext/win32/lib/win32/resolv.rb	2020-04-05 01:56:06.236155300 -0400
+@@ -36,7 +36,7 @@ module Win32
+ 
+ module Kernel32
+   extend Importer
+-  dlload "kernel32"
++  dlload "kernel32.dll"
+ end
+ getv = Kernel32.extern "int GetVersionExA(void *)", :stdcall
+ info = [ 148, 0, 0, 0, 0 ].pack('V5') + "\0" * 128
+diff -Nuarp ruby-2.3.8.a/gc.c ruby-2.3.8.b/gc.c
+--- ruby-2.3.8.a/gc.c	2018-03-28 01:17:33.000000000 -0400
++++ ruby-2.3.8.b/gc.c	2020-04-05 01:56:06.596953700 -0400
+@@ -503,6 +503,8 @@ typedef struct rb_objspace {
+ #if GC_ENABLE_INCREMENTAL_MARK
+ 	unsigned int during_incremental_marking : 1;
+ #endif
++        int collect_gc_stats;
++        int verbose_gc_stats;
+     } flags;
+ 
+     rb_event_flag_t hook_events;
+@@ -578,14 +580,21 @@ typedef struct rb_objspace {
+ 
+ 	/* temporary profiling space */
+ 	double gc_sweep_start_time;
++        double gc_mark_start_time;
++
+ 	size_t total_allocated_objects_at_gc_start;
+ 	size_t heap_used_at_gc_start;
+ 
+ 	/* basic statistics */
+ 	size_t count;
++        double time;
+ 	size_t total_freed_objects;
+ 	size_t total_allocated_pages;
+ 	size_t total_freed_pages;
++        size_t total_mallocs;
++        size_t total_malloced_bytes;
++        size_t live_after_last_sweep;
++
+     } profile;
+     struct gc_list *global_list;
+ 
+@@ -721,6 +730,7 @@ VALUE *ruby_initial_gc_stress_ptr = &rub
+ #define heap_tomb               (&objspace->tomb_heap)
+ #define dont_gc 		objspace->flags.dont_gc
+ #define during_gc		objspace->flags.during_gc
++#define collect_gc_stats        objspace->flags.collect_gc_stats
+ #define finalizing		objspace->atomic_flags.finalizing
+ #define finalizer_table 	objspace->finalizer_table
+ #define global_list		objspace->global_list
+@@ -5836,6 +5846,155 @@ rb_gc_writebarrier_remember(VALUE obj)
+ 
+ static st_table *rgengc_unprotect_logging_table;
+ 
++/*
++ *  call-seq:
++ *     GC.enable_stats	  => true or false
++ *
++ *  Enables garbage collection statistics, returning <code>true</code> if garbage
++ *  collection statistics was already enabled.
++ *
++ *     GC.enable_stats	 #=> false or true
++ *     GC.enable_stats	 #=> true
++ *
++ */
++
++VALUE
++rb_gc_enable_stats()
++{
++    rb_objspace_t *objspace = &rb_objspace;
++    int old = collect_gc_stats;
++    collect_gc_stats = 1;
++    return old ? Qtrue : Qfalse;
++}
++/*
++ *  call-seq:
++ *     GC.disable_stats	   => true or false
++ *
++ *  Disables garbage collection statistics, returning <code>true</code> if garbage
++ *  collection statistics was already disabled.
++ *
++ *     GC.disable_stats	  #=> false or true
++ *     GC.disable_stats	  #=> true
++ *
++ */
++
++VALUE
++rb_gc_disable_stats()
++{
++    rb_objspace_t *objspace = &rb_objspace;
++    int old = collect_gc_stats;
++    collect_gc_stats = 0;
++    return old ? Qtrue : Qfalse;
++}
++
++/*
++ *  call-seq:
++ *     GC.stats_enabled?    => true or false
++ *
++ *  Check whether GC stats have been enabled.
++ *
++ *     GC.stats_enabled?   #=> false or true
++ *
++ */
++
++VALUE
++rb_gc_stats_enabled()
++{
++    rb_objspace_t *objspace = &rb_objspace;
++    return collect_gc_stats ? Qtrue : Qfalse;
++}
++
++
++double rb_gc_total_time(void)
++{
++    return rb_objspace.profile.time;
++}
++
++/*
++ *  call-seq:
++ *     GC.time	  => Integer
++ *
++ *  Returns the time spent during garbage collection while GC statistics collection
++ *  was enabled (in micro seconds).
++ *
++ *     GC.time	  #=> 20000
++ *
++ */
++
++static VALUE
++gc_time()
++{
++    return DBL2NUM(1000000*rb_objspace.profile.time);
++}
++
++/*
++ *  call-seq:
++ *     GC.heap_slots	=> Integer
++ *
++ *  Returns the number of heap slots available for object allocations.
++ *
++ *     GC.heap_slots	#=> 10000
++ *
++ */
++VALUE
++rb_gc_heap_slots()
++{
++    rb_objspace_t *objspace = &rb_objspace;
++    return SIZET2NUM(heap_allocated_pages * HEAP_OBJ_LIMIT);
++}
++
++/*
++ *  call-seq:
++ *     GC.heap_slots_live_after_last_gc	   => Integer
++ *
++ *  Returns the number of heap slots which were live after the last garbage collection.
++ *
++ *     GC.heap_slots_live_after_last_gc	   #=> 231223
++ *
++ */
++VALUE
++rb_gc_heap_slots_live_after_last_gc()
++{
++    rb_objspace_t *objspace = &rb_objspace;
++    return SIZET2NUM(objspace->profile.live_after_last_sweep);
++}
++
++/*
++ *  call-seq:
++ *     GC.total_mallocs	   => Integer
++ *
++ *  Returns the number malloc calls. Might wrap around.
++ *
++ *     GC.total_mallocs	   #=> 324234323246
++ *
++ */
++static VALUE
++gc_total_mallocs()
++{
++    return SIZET2NUM(rb_objspace.profile.total_mallocs);
++}
++size_t rb_gc_total_mallocs(void) {
++    return rb_objspace.profile.total_mallocs;
++}
++
++/*
++ *  call-seq:
++ *     GC.total_malloced_bytes	   => Integer
++ *
++ *  Returns the number of bytes allocated. Might wrap around.
++ *
++ *     GC.total_malloced_bytes	   #=> 354656256432446
++ *
++ */
++static VALUE
++gc_total_malloced_bytes()
++{
++    return SIZET2NUM(rb_objspace.profile.total_malloced_bytes);
++}
++size_t rb_gc_total_malloced_bytes(void) {
++    return rb_objspace.profile.total_malloced_bytes;
++}
++
+ static int
+ rgengc_unprotect_logging_exit_func_i(st_data_t key, st_data_t val, st_data_t arg)
+ {
+@@ -7553,6 +7712,10 @@ objspace_malloc_increase(rb_objspace_t *
+ {
+     if (new_size > old_size) {
+ 	ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
++        if (collect_gc_stats) {
++            ATOMIC_SIZE_ADD(objspace->profile.total_mallocs, 1);
++            ATOMIC_SIZE_ADD(objspace->profile.total_malloced_bytes, new_size - old_size);
++        }
+ #if RGENGC_ESTIMATE_OLDMALLOC
+ 	ATOMIC_SIZE_ADD(objspace->rgengc.oldmalloc_increase, new_size - old_size);
+ #endif
+@@ -7891,6 +8054,12 @@ gc_malloc_allocated_size(VALUE self)
+     return UINT2NUM(rb_objspace.malloc_params.allocated_size);
+ }
+ 
++size_t
++rb_gc_malloc_allocated_size(void)
++{
++    return rb_objspace.malloc_params.allocated_size;
++}
++
+ /*
+  *  call-seq:
+  *     GC.malloc_allocations -> Integer
+@@ -7905,6 +8074,12 @@ gc_malloc_allocations(VALUE self)
+ {
+     return UINT2NUM(rb_objspace.malloc_params.allocations);
+ }
++
++size_t
++rb_gc_malloc_allocations(void)
++{
++    return rb_objspace.malloc_params.allocations;
++}
+ #endif
+ 
+ /*
+@@ -8446,6 +8621,14 @@ gc_prof_mark_timer_start(rb_objspace_t *
+ #if GC_PROFILE_MORE_DETAIL
+     if (gc_prof_enabled(objspace)) {
+ 	gc_prof_record(objspace)->gc_mark_time = getrusage_time();
++    } else {
++        if (collect_gc_stats) {
++          objspace->profile.gc_mark_start_time = getrusage_time();
++        }
++    }
++#else
++    if (collect_gc_stats) {
++        objspace->profile.gc_mark_start_time = getrusage_time();
+     }
+ #endif
+ }
+@@ -8458,6 +8641,17 @@ gc_prof_mark_timer_stop(rb_objspace_t *o
+     if (gc_prof_enabled(objspace)) {
+         gc_profile_record *record = gc_prof_record(objspace);
+ 	record->gc_mark_time = elapsed_time_from(record->gc_mark_time);
++        if (collect_gc_stats) {
++            objspace->profile.time += record->gc_mark_time;
++        }
++    } else {
++        if (collect_gc_stats) {
++            objspace->profile.time += elapsed_time_from(objspace->profile.gc_mark_start_time);
++        }
++    }
++#else
++    if (collect_gc_stats) {
++        objspace->profile.time += elapsed_time_from(objspace->profile.gc_mark_start_time);
+     }
+ #endif
+ }
+@@ -8469,9 +8663,13 @@ gc_prof_sweep_timer_start(rb_objspace_t
+     if (gc_prof_enabled(objspace)) {
+ 	gc_profile_record *record = gc_prof_record(objspace);
+ 
+-	if (record->gc_time > 0 || GC_PROFILE_MORE_DETAIL) {
++	if (record->gc_time > 0 || GC_PROFILE_MORE_DETAIL || collect_gc_stats) {
+ 	    objspace->profile.gc_sweep_start_time = getrusage_time();
+-	}
++        }
++    } else {
++        if (collect_gc_stats) {
++            objspace->profile.gc_sweep_start_time = getrusage_time();
++        }
+     }
+ }
+ 
+@@ -8488,16 +8686,30 @@ gc_prof_sweep_timer_stop(rb_objspace_t *
+ 	    sweep_time = elapsed_time_from(objspace->profile.gc_sweep_start_time);
+ 	    /* need to accumulate GC time for lazy sweep after gc() */
+ 	    record->gc_time += sweep_time;
++            if (collect_gc_stats) {
++                objspace->profile.time += sweep_time;
++            }
+ 	}
+ 	else if (GC_PROFILE_MORE_DETAIL) {
+ 	    sweep_time = elapsed_time_from(objspace->profile.gc_sweep_start_time);
+-	}
++            if (collect_gc_stats) {
++                objspace->profile.time += sweep_time;
++            }
++	} else {
++            if (collect_gc_stats) {
++                objspace->profile.time += elapsed_time_from(objspace->profile.gc_sweep_start_time);
++            }
++        }
+ 
+ #if GC_PROFILE_MORE_DETAIL
+ 	record->gc_sweep_time += sweep_time;
+ 	if (heap_pages_deferred_final) record->flags |= GPR_FLAG_HAVE_FINALIZE;
+ #endif
+ 	if (heap_pages_deferred_final) objspace->profile.latest_gc_info |= GPR_FLAG_HAVE_FINALIZE;
++    } else {
++        if (collect_gc_stats) {
++            objspace->profile.time += elapsed_time_from(objspace->profile.gc_sweep_start_time);
++        }
+     }
+ }
+ 
+@@ -8516,9 +8728,13 @@ gc_prof_set_malloc_info(rb_objspace_t *o
+ static inline void
+ gc_prof_set_heap_info(rb_objspace_t *objspace)
+ {
++    if (objspace->profile.total_allocated_objects_at_gc_start > objspace->profile.total_freed_objects)
++        objspace->profile.live_after_last_sweep =
++            objspace->profile.total_allocated_objects_at_gc_start - objspace->profile.total_freed_objects;
++
+     if (gc_prof_enabled(objspace)) {
+ 	gc_profile_record *record = gc_prof_record(objspace);
+-	size_t live = objspace->profile.total_allocated_objects_at_gc_start - objspace->profile.total_freed_objects;
++        size_t live = objspace->profile.live_after_last_sweep;
+ 	size_t total = objspace->profile.heap_used_at_gc_start * HEAP_OBJ_LIMIT;
+ 
+ #if GC_PROFILE_MORE_DETAIL
+@@ -9306,11 +9522,19 @@ Init_GC(void)
+     rb_define_singleton_method(rb_mGC, "start", gc_start_internal, -1);
+     rb_define_singleton_method(rb_mGC, "enable", rb_gc_enable, 0);
+     rb_define_singleton_method(rb_mGC, "disable", rb_gc_disable, 0);
++    rb_define_singleton_method(rb_mGC, "enable_stats", rb_gc_enable_stats, 0);
++    rb_define_singleton_method(rb_mGC, "disable_stats", rb_gc_disable_stats, 0);
++    rb_define_singleton_method(rb_mGC, "stats_enabled?", rb_gc_stats_enabled, 0);
+     rb_define_singleton_method(rb_mGC, "stress", gc_stress_get, 0);
+     rb_define_singleton_method(rb_mGC, "stress=", gc_stress_set_m, 1);
+     rb_define_singleton_method(rb_mGC, "count", gc_count, 0);
++    rb_define_singleton_method(rb_mGC, "time", gc_time, 0);
++    rb_define_singleton_method(rb_mGC, "total_mallocs", gc_total_mallocs, 0);
++    rb_define_singleton_method(rb_mGC, "total_malloced_bytes", gc_total_malloced_bytes, 0);
++    rb_define_singleton_method(rb_mGC, "heap_slots", rb_gc_heap_slots, 0);
+     rb_define_singleton_method(rb_mGC, "stat", gc_stat, -1);
+     rb_define_singleton_method(rb_mGC, "latest_gc_info", gc_latest_gc_info, -1);
++    rb_define_singleton_method(rb_mGC, "heap_slots_live_after_last_gc", rb_gc_heap_slots_live_after_last_gc, 0);
+     rb_define_method(rb_mGC, "garbage_collect", gc_start_internal, -1);
+ 
+     gc_constants = rb_hash_new();
+diff -Nuarp ruby-2.3.8.a/include/ruby/intern.h ruby-2.3.8.b/include/ruby/intern.h
+--- ruby-2.3.8.a/include/ruby/intern.h	2016-07-11 09:50:32.000000000 -0400
++++ ruby-2.3.8.b/include/ruby/intern.h	2020-04-05 01:56:06.603951500 -0400
+@@ -500,12 +500,20 @@ void rb_gc_finalize_deferred(void);
+ void rb_gc_call_finalizer_at_exit(void);
+ VALUE rb_gc_enable(void);
+ VALUE rb_gc_disable(void);
++VALUE rb_gc_enable_stats(void);
++VALUE rb_gc_disable_stats(void);
++VALUE rb_gc_stats_enabled(void);
+ VALUE rb_gc_start(void);
+ VALUE rb_define_finalizer(VALUE, VALUE);
+ VALUE rb_undefine_finalizer(VALUE);
+ size_t rb_gc_count(void);
+ size_t rb_gc_stat(VALUE);
+ VALUE rb_gc_latest_gc_info(VALUE);
++double rb_gc_total_time(void);
++VALUE rb_gc_heap_slots(void);
++VALUE rb_gc_heap_slots_live_after_last_gc(void);
++size_t rb_gc_total_mallocs(void);
++size_t rb_gc_total_malloced_bytes(void);
+ /* hash.c */
+ void st_foreach_safe(struct st_table *, int (*)(ANYARGS), st_data_t);
+ VALUE rb_check_hash_type(VALUE);
+diff -Nuarp ruby-2.3.8.a/lib/mkmf.rb ruby-2.3.8.b/lib/mkmf.rb
+--- ruby-2.3.8.a/lib/mkmf.rb	2018-01-31 05:52:30.000000000 -0500
++++ ruby-2.3.8.b/lib/mkmf.rb	2020-04-05 01:56:03.327251500 -0400
+@@ -1892,7 +1892,7 @@ SRC
+ SHELL = /bin/sh
+ 
+ # V=0 quiet, V=1 verbose.  other values don't work.
+-V = 0
++V = 1
+ Q1 = $(V:1=)
+ Q = $(Q1:0=@)
+ ECHO1 = $(V:1=@#{CONFIG['NULLCMD']})
+diff -Nuarp ruby-2.3.8.a/lib/rdoc/ri/paths.rb ruby-2.3.8.b/lib/rdoc/ri/paths.rb
+--- ruby-2.3.8.a/lib/rdoc/ri/paths.rb	2015-12-16 00:07:31.000000000 -0500
++++ ruby-2.3.8.b/lib/rdoc/ri/paths.rb	2020-04-05 01:56:01.650063700 -0400
+@@ -10,7 +10,7 @@ module RDoc::RI::Paths
+   #:stopdoc:
+   require 'rbconfig'
+ 
+-  version = RbConfig::CONFIG['ruby_version']
++  version = RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
+ 
+   BASE    = if RbConfig::CONFIG.key? 'ridir' then
+               File.join RbConfig::CONFIG['ridir'], version
+diff -Nuarp ruby-2.3.8.a/lib/rubygems/defaults.rb ruby-2.3.8.b/lib/rubygems/defaults.rb
+--- ruby-2.3.8.a/lib/rubygems/defaults.rb	2016-08-24 11:28:23.000000000 -0400
++++ ruby-2.3.8.b/lib/rubygems/defaults.rb	2020-04-05 01:56:01.657060800 -0400
+@@ -32,20 +32,20 @@ module Gem
+              [
+                File.dirname(RbConfig::CONFIG['sitedir']),
+                'Gems',
+-               RbConfig::CONFIG['ruby_version']
++               RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
+              ]
+            elsif RbConfig::CONFIG['rubylibprefix'] then
+              [
+               RbConfig::CONFIG['rubylibprefix'],
+               'gems',
+-              RbConfig::CONFIG['ruby_version']
++              RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
+              ]
+            else
+              [
+                RbConfig::CONFIG['libdir'],
+                ruby_engine,
+                'gems',
+-               RbConfig::CONFIG['ruby_version']
++               RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
+              ]
+            end
+ 
+@@ -75,7 +75,8 @@ module Gem
+ 
+   def self.user_dir
+     parts = [Gem.user_home, '.gem', ruby_engine]
+-    parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
++    ruby_version_dir_name = RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
++    parts << ruby_version_dir_name unless ruby_version_dir_name.empty?
+     File.join parts
+   end
+ 
+@@ -172,7 +173,7 @@ module Gem
+     return nil unless RbConfig::CONFIG.key? 'vendordir'
+ 
+     File.join RbConfig::CONFIG['vendordir'], 'gems',
+-              RbConfig::CONFIG['ruby_version']
++              RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
+   end
+ 
+ end
+diff -Nuarp ruby-2.3.8.a/lib/rubygems/specification.rb ruby-2.3.8.b/lib/rubygems/specification.rb
+--- ruby-2.3.8.a/lib/rubygems/specification.rb	2018-02-16 11:21:44.000000000 -0500
++++ ruby-2.3.8.b/lib/rubygems/specification.rb	2020-04-05 01:56:04.909557200 -0400
+@@ -2338,7 +2338,7 @@ class Gem::Specification < Gem::BasicSpe
+ 
+   def ruby_code(obj)
+     case obj
+-    when String            then obj.dump + ".freeze"
++    when String            then obj.dump
+     when Array             then '[' + obj.map { |x| ruby_code x }.join(", ") + ']'
+     when Hash              then
+       seg = obj.keys.sort.map { |k| "#{k.to_s.dump} => #{obj[k].to_s.dump}" }
+@@ -2528,14 +2528,14 @@ class Gem::Specification < Gem::BasicSpe
+       dependencies.each do |dep|
+         req = dep.requirements_list.inspect
+         dep.instance_variable_set :@type, :runtime if dep.type.nil? # HACK
+-        result << "      s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{req})"
++        result << "      s.add_#{dep.type}_dependency(%q<#{dep.name}>, #{req})"
+       end
+ 
+       result << "    else"
+ 
+       dependencies.each do |dep|
+         version_reqs_param = dep.requirements_list.inspect
+-        result << "      s.add_dependency(%q<#{dep.name}>.freeze, #{version_reqs_param})"
++        result << "      s.add_dependency(%q<#{dep.name}>, #{version_reqs_param})"
+       end
+ 
+       result << '    end'
+@@ -2543,7 +2543,7 @@ class Gem::Specification < Gem::BasicSpe
+       result << "  else"
+       dependencies.each do |dep|
+         version_reqs_param = dep.requirements_list.inspect
+-        result << "    s.add_dependency(%q<#{dep.name}>.freeze, #{version_reqs_param})"
++        result << "    s.add_dependency(%q<#{dep.name}>, #{version_reqs_param})"
+       end
+       result << "  end"
+     end
+diff -Nuarp ruby-2.3.8.a/lib/rubygems.rb ruby-2.3.8.b/lib/rubygems.rb
+--- ruby-2.3.8.a/lib/rubygems.rb	2018-02-16 11:21:44.000000000 -0500
++++ ruby-2.3.8.b/lib/rubygems.rb	2020-04-05 01:56:05.875362200 -0400
+@@ -121,7 +121,6 @@ module Gem
+ 
+   WIN_PATTERNS = [
+     /bccwin/i,
+-    /cygwin/i,
+     /djgpp/i,
+     /mingw/i,
+     /mswin/i,
+diff -Nuarp ruby-2.3.8.a/loadpath.c ruby-2.3.8.b/loadpath.c
+--- ruby-2.3.8.a/loadpath.c	2013-06-17 07:56:21.000000000 -0400
++++ ruby-2.3.8.b/loadpath.c	2020-04-05 01:56:02.996440300 -0400
+@@ -65,22 +65,38 @@ const char ruby_initial_load_paths[] =
+     RUBY_SEARCH_PATH "\0"
+ #endif
+ #ifndef NO_RUBY_SITE_LIB
++#ifdef RUBY_LIB_VERSION_BLANK
++    RUBY_SITE_LIB "\0"
++#else
+     RUBY_SITE_LIB2 "\0"
++#endif
+ #ifdef RUBY_THINARCH
+     RUBY_SITE_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+ #endif
+     RUBY_SITE_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
++#ifndef RUBY_LIB_VERSION_BLANK
+     RUBY_SITE_LIB "\0"
+ #endif
++#endif
+ 
+ #ifndef NO_RUBY_VENDOR_LIB
++#ifdef RUBY_LIB_VERSION_BLANK
++    RUBY_VENDOR_LIB "\0"
++#else
+     RUBY_VENDOR_LIB2 "\0"
++#endif
+ #ifdef RUBY_THINARCH
+     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+ #endif
+     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
++#ifndef RUBY_LIB_VERSION_BLANK
+     RUBY_VENDOR_LIB "\0"
+ #endif
++#endif
++
++#ifdef RUBYGEMS_DIR
++    RUBYGEMS_DIR "\0"
++#endif
+ 
+     RUBY_LIB "\0"
+ #ifdef RUBY_THINARCH
+diff -Nuarp ruby-2.3.8.a/Makefile.in ruby-2.3.8.b/Makefile.in
+--- ruby-2.3.8.a/Makefile.in	2018-03-28 01:30:24.000000000 -0400
++++ ruby-2.3.8.b/Makefile.in	2020-04-05 01:56:03.630079600 -0400
+@@ -116,6 +116,8 @@ XRUBY_RUBYLIBDIR = @XRUBY_RUBYLIBDIR@
+ XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
+ BOOTSTRAPRUBY = @BOOTSTRAPRUBY@
+ 
++OPTIONAL_PRELUDES = @OPTIONAL_PRELUDES@
++
+ #### End of system configuration section. ####
+ 
+ MAJOR=	@MAJOR@
+diff -Nuarp ruby-2.3.8.a/template/ruby.pc.in ruby-2.3.8.b/template/ruby.pc.in
+--- ruby-2.3.8.a/template/ruby.pc.in	2013-05-05 00:29:01.000000000 -0400
++++ ruby-2.3.8.b/template/ruby.pc.in	2020-04-05 01:56:01.665055500 -0400
+@@ -9,6 +9,7 @@ MAJOR=@MAJOR@
+ MINOR=@MINOR@
+ TEENY=@TEENY@
+ ruby_version=@ruby_version@
++ruby_version_dir_name=@ruby_version_dir_name@
+ RUBY_PROGRAM_VERSION=@RUBY_PROGRAM_VERSION@
+ RUBY_BASE_NAME=@RUBY_BASE_NAME@
+ RUBY_VERSION_NAME=@RUBY_VERSION_NAME@
+diff -Nuarp ruby-2.3.8.a/template/verconf.h.tmpl ruby-2.3.8.b/template/verconf.h.tmpl
+--- ruby-2.3.8.a/template/verconf.h.tmpl	2015-12-20 01:36:57.000000000 -0500
++++ ruby-2.3.8.b/template/verconf.h.tmpl	2020-04-05 01:56:03.002437000 -0400
+@@ -36,6 +36,9 @@
+ % if C["RUBY_SEARCH_PATH"]
+ #define RUBY_SEARCH_PATH		"${RUBY_SEARCH_PATH}"
+ % end
++% if C["rubygemsdir"]
++#define RUBYGEMS_DIR			"${rubygemsdir}"
++% end
+ %
+ % R = {}
+ % R["ruby_version"] = '"RUBY_LIB_VERSION"'
+diff -Nuarp ruby-2.3.8.a/test/fiddle/helper.rb ruby-2.3.8.b/test/fiddle/helper.rb
+--- ruby-2.3.8.a/test/fiddle/helper.rb	2015-12-16 00:07:31.000000000 -0500
++++ ruby-2.3.8.b/test/fiddle/helper.rb	2020-04-05 01:56:04.259329300 -0400
+@@ -6,98 +6,6 @@ require 'fiddle'
+ 
+ libc_so = libm_so = nil
+ 
+-case RUBY_PLATFORM
+-when /cygwin/
+-  libc_so = "cygwin1.dll"
+-  libm_so = "cygwin1.dll"
+-when /x86_64-linux/
+-  libc_so = "/lib64/libc.so.6"
+-  libm_so = "/lib64/libm.so.6"
+-when /linux/
+-  libdir = '/lib'
+-  case [0].pack('L!').size
+-  when 4
+-    # 32-bit ruby
+-    libdir = '/lib32' if File.directory? '/lib32'
+-  when 8
+-    # 64-bit ruby
+-    libdir = '/lib64' if File.directory? '/lib64'
+-  end
+-  libc_so = File.join(libdir, "libc.so.6")
+-  libm_so = File.join(libdir, "libm.so.6")
+-when /mingw/, /mswin/
+-  require "rbconfig"
+-  crtname = RbConfig::CONFIG["RUBY_SO_NAME"][/msvc\w+/] || 'ucrtbase'
+-  libc_so = libm_so = "#{crtname}.dll"
+-when /darwin/
+-  libc_so = "/usr/lib/libc.dylib"
+-  libm_so = "/usr/lib/libm.dylib"
+-when /kfreebsd/
+-  libc_so = "/lib/libc.so.0.1"
+-  libm_so = "/lib/libm.so.1"
+-when /gnu/	#GNU/Hurd
+-  libc_so = "/lib/libc.so.0.3"
+-  libm_so = "/lib/libm.so.6"
+-when /mirbsd/
+-  libc_so = "/usr/lib/libc.so.41.10"
+-  libm_so = "/usr/lib/libm.so.7.0"
+-when /freebsd/
+-  libc_so = "/lib/libc.so.7"
+-  libm_so = "/lib/libm.so.5"
+-when /bsd|dragonfly/
+-  libc_so = "/usr/lib/libc.so"
+-  libm_so = "/usr/lib/libm.so"
+-when /solaris/
+-  libdir = '/lib'
+-  case [0].pack('L!').size
+-  when 4
+-    # 32-bit ruby
+-    libdir = '/lib' if File.directory? '/lib'
+-  when 8
+-    # 64-bit ruby
+-    libdir = '/lib/64' if File.directory? '/lib/64'
+-  end
+-  libc_so = File.join(libdir, "libc.so")
+-  libm_so = File.join(libdir, "libm.so")
+-when /aix/
+-  pwd=Dir.pwd
+-  libc_so = libm_so = "#{pwd}/libaixdltest.so"
+-  unless File.exist? libc_so
+-    cobjs=%w!strcpy.o!
+-    mobjs=%w!floats.o sin.o!
+-    funcs=%w!sin sinf strcpy strncpy!
+-    expfile='dltest.exp'
+-    require 'tmpdir'
+-    Dir.mktmpdir do |dir|
+-      begin
+-        Dir.chdir dir
+-        %x!/usr/bin/ar x /usr/lib/libc.a #{cobjs.join(' ')}!
+-        %x!/usr/bin/ar x /usr/lib/libm.a #{mobjs.join(' ')}!
+-        %x!echo "#{funcs.join("\n")}\n" > #{expfile}!
+-        require 'rbconfig'
+-        if RbConfig::CONFIG["GCC"] = 'yes'
+-          lflag='-Wl,'
+-        else
+-          lflag=''
+-        end
+-        flags="#{lflag}-bE:#{expfile} #{lflag}-bnoentry -lm"
+-        %x!#{RbConfig::CONFIG["LDSHARED"]} -o #{libc_so} #{(cobjs+mobjs).join(' ')} #{flags}!
+-      ensure
+-        Dir.chdir pwd
+-      end
+-    end
+-  end
+-else
+-  libc_so = ARGV[0] if ARGV[0] && ARGV[0][0] == ?/
+-  libm_so = ARGV[1] if ARGV[1] && ARGV[1][0] == ?/
+-  if( !(libc_so && libm_so) )
+-    $stderr.puts("libc and libm not found: #{$0} <libc> <libm>")
+-  end
+-end
+-
+-libc_so = nil if !libc_so || (libc_so[0] == ?/ && !File.file?(libc_so))
+-libm_so = nil if !libm_so || (libm_so[0] == ?/ && !File.file?(libm_so))
+-
+ if !libc_so || !libm_so
+   ruby = EnvUtil.rubybin
+   ldd = `ldd #{ruby}`
+diff -Nuarp ruby-2.3.8.a/test/ruby/test_float.rb ruby-2.3.8.b/test/ruby/test_float.rb
+--- ruby-2.3.8.a/test/ruby/test_float.rb	2017-06-30 07:08:35.000000000 -0400
++++ ruby-2.3.8.b/test/ruby/test_float.rb	2020-04-05 01:56:04.589141100 -0400
+@@ -444,11 +444,6 @@ class TestFloat < Test::Unit::TestCase
+     assert_raise(TypeError) {1.0.round(nil)}
+     def (prec = Object.new).to_int; 2; end
+     assert_equal(1.0, 0.998.round(prec))
+-
+-    assert_equal(+5.02, +5.015.round(2))
+-    assert_equal(-5.02, -5.015.round(2))
+-    assert_equal(+1.26, +1.255.round(2))
+-    assert_equal(-1.26, -1.255.round(2))
+   end
+ 
+   VS = [
+diff -Nuarp ruby-2.3.8.a/test/rubygems/test_gem.rb ruby-2.3.8.b/test/rubygems/test_gem.rb
+--- ruby-2.3.8.a/test/rubygems/test_gem.rb	2016-08-24 11:28:23.000000000 -0400
++++ ruby-2.3.8.b/test/rubygems/test_gem.rb	2020-04-05 01:56:01.673052200 -0400
+@@ -962,7 +962,8 @@ class TestGem < Gem::TestCase
+ 
+   def test_self_user_dir
+     parts = [@userhome, '.gem', Gem.ruby_engine]
+-    parts << RbConfig::CONFIG['ruby_version'] unless RbConfig::CONFIG['ruby_version'].empty?
++    ruby_version_dir_name = RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
++    parts << ruby_version_dir_name unless ruby_version_dir_name.empty?
+ 
+     assert_equal File.join(parts), Gem.user_dir
+   end
+@@ -1089,7 +1090,7 @@ class TestGem < Gem::TestCase
+   def test_self_vendor_dir
+     expected =
+       File.join RbConfig::CONFIG['vendordir'], 'gems',
+-                RbConfig::CONFIG['ruby_version']
++                RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
+ 
+     assert_equal expected, Gem.vendor_dir
+   end
+diff -Nuarp ruby-2.3.8.a/test/rubygems/test_gem_specification.rb ruby-2.3.8.b/test/rubygems/test_gem_specification.rb
+--- ruby-2.3.8.a/test/rubygems/test_gem_specification.rb	2018-02-16 11:21:44.000000000 -0500
++++ ruby-2.3.8.b/test/rubygems/test_gem_specification.rb	2020-04-05 01:56:04.916552400 -0400
+@@ -2284,30 +2284,30 @@ dependencies: []
+ # stub: a 2 ruby lib\0other
+ 
+ Gem::Specification.new do |s|
+-  s.name = "a".freeze
++  s.name = "a"
+   s.version = "2"
+ 
+-  s.required_rubygems_version = Gem::Requirement.new(\"> 0\".freeze) if s.respond_to? :required_rubygems_version=
+-  s.require_paths = ["lib".freeze, "other".freeze]
+-  s.authors = ["A User".freeze]
++  s.required_rubygems_version = Gem::Requirement.new(\"> 0\") if s.respond_to? :required_rubygems_version=
++  s.require_paths = ["lib", "other"]
++  s.authors = ["A User"]
+   s.date = "#{Gem::Specification::TODAY.strftime "%Y-%m-%d"}"
+-  s.description = "This is a test description".freeze
+-  s.email = "example@example.com".freeze
+-  s.files = ["lib/code.rb".freeze]
+-  s.homepage = "http://example.com".freeze
+-  s.rubygems_version = "#{Gem::VERSION}".freeze
+-  s.summary = "this is a summary".freeze
++  s.description = "This is a test description"
++  s.email = "example@example.com"
++  s.files = ["lib/code.rb"]
++  s.homepage = "http://example.com"
++  s.rubygems_version = "#{Gem::VERSION}"
++  s.summary = "this is a summary"
+ 
+   if s.respond_to? :specification_version then
+     s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
+ 
+     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
+-      s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
++      s.add_runtime_dependency(%q<b>, [\"= 1\"])
+     else
+-      s.add_dependency(%q<b>.freeze, [\"= 1\"])
++      s.add_dependency(%q<b>, [\"= 1\"])
+     end
+   else
+-    s.add_dependency(%q<b>.freeze, [\"= 1\"])
++    s.add_dependency(%q<b>, [\"= 1\"])
+   end
+ end
+     SPEC
+@@ -2333,18 +2333,18 @@ end
+ # stub: a 2 ruby lib
+ 
+ Gem::Specification.new do |s|
+-  s.name = "a".freeze
++  s.name = "a"
+   s.version = "2"
+ 
+-  s.required_rubygems_version = Gem::Requirement.new(\"> 0\".freeze) if s.respond_to? :required_rubygems_version=
+-  s.require_paths = ["lib".freeze]
+-  s.authors = ["A User".freeze]
++  s.required_rubygems_version = Gem::Requirement.new(\"> 0\") if s.respond_to? :required_rubygems_version=
++  s.require_paths = ["lib"]
++  s.authors = ["A User"]
+   s.date = "#{Gem::Specification::TODAY.strftime "%Y-%m-%d"}"
+-  s.description = "This is a test description".freeze
+-  s.email = "example@example.com".freeze
+-  s.homepage = "http://example.com".freeze
+-  s.rubygems_version = "#{Gem::VERSION}".freeze
+-  s.summary = "this is a summary".freeze
++  s.description = "This is a test description"
++  s.email = "example@example.com"
++  s.homepage = "http://example.com"
++  s.rubygems_version = "#{Gem::VERSION}"
++  s.summary = "this is a summary"
+ 
+   s.installed_by_version = "#{Gem::VERSION}" if s.respond_to? :installed_by_version
+ 
+@@ -2352,12 +2352,12 @@ Gem::Specification.new do |s|
+     s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
+ 
+     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
+-      s.add_runtime_dependency(%q<b>.freeze, [\"= 1\"])
++      s.add_runtime_dependency(%q<b>, [\"= 1\"])
+     else
+-      s.add_dependency(%q<b>.freeze, [\"= 1\"])
++      s.add_dependency(%q<b>, [\"= 1\"])
+     end
+   else
+-    s.add_dependency(%q<b>.freeze, [\"= 1\"])
++    s.add_dependency(%q<b>, [\"= 1\"])
+   end
+ end
+     SPEC
+@@ -2389,43 +2389,43 @@ end
+ # stub: #{extensions}
+ 
+ Gem::Specification.new do |s|
+-  s.name = "a".freeze
++  s.name = "a"
+   s.version = "1"
+   s.platform = Gem::Platform.new(#{expected_platform})
+ 
+-  s.required_rubygems_version = Gem::Requirement.new(\">= 0\".freeze) if s.respond_to? :required_rubygems_version=
+-  s.require_paths = ["lib".freeze]
+-  s.authors = ["A User".freeze]
++  s.required_rubygems_version = Gem::Requirement.new(\">= 0\") if s.respond_to? :required_rubygems_version=
++  s.require_paths = ["lib"]
++  s.authors = ["A User"]
+   s.date = "#{Gem::Specification::TODAY.strftime "%Y-%m-%d"}"
+-  s.description = "This is a test description".freeze
+-  s.email = "example@example.com".freeze
+-  s.executables = ["exec".freeze]
+-  s.extensions = ["ext/a/extconf.rb".freeze]
+-  s.files = ["bin/exec".freeze, "ext/a/extconf.rb".freeze, "lib/code.rb".freeze, "test/suite.rb".freeze]
+-  s.homepage = "http://example.com".freeze
+-  s.licenses = ["MIT".freeze]
+-  s.requirements = ["A working computer".freeze]
+-  s.rubyforge_project = "example".freeze
+-  s.rubygems_version = "#{Gem::VERSION}".freeze
+-  s.summary = "this is a summary".freeze
+-  s.test_files = ["test/suite.rb".freeze]
++  s.description = "This is a test description"
++  s.email = "example@example.com"
++  s.executables = ["exec"]
++  s.extensions = ["ext/a/extconf.rb"]
++  s.files = ["bin/exec", "ext/a/extconf.rb", "lib/code.rb", "test/suite.rb"]
++  s.homepage = "http://example.com"
++  s.licenses = ["MIT"]
++  s.requirements = ["A working computer"]
++  s.rubyforge_project = "example"
++  s.rubygems_version = "#{Gem::VERSION}"
++  s.summary = "this is a summary"
++  s.test_files = ["test/suite.rb"]
+ 
+   if s.respond_to? :specification_version then
+     s.specification_version = 4
+ 
+     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
+-      s.add_runtime_dependency(%q<rake>.freeze, [\"> 0.4\"])
+-      s.add_runtime_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\"])
+-      s.add_runtime_dependency(%q<pqa>.freeze, [\"<= 0.6\", \"> 0.4\"])
++      s.add_runtime_dependency(%q<rake>, [\"> 0.4\"])
++      s.add_runtime_dependency(%q<jabber4r>, [\"> 0.0.0\"])
++      s.add_runtime_dependency(%q<pqa>, [\"<= 0.6\", \"> 0.4\"])
+     else
+-      s.add_dependency(%q<rake>.freeze, [\"> 0.4\"])
+-      s.add_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\"])
+-      s.add_dependency(%q<pqa>.freeze, [\"<= 0.6\", \"> 0.4\"])
++      s.add_dependency(%q<rake>, [\"> 0.4\"])
++      s.add_dependency(%q<jabber4r>, [\"> 0.0.0\"])
++      s.add_dependency(%q<pqa>, [\"<= 0.6\", \"> 0.4\"])
+     end
+   else
+-    s.add_dependency(%q<rake>.freeze, [\"> 0.4\"])
+-    s.add_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\"])
+-    s.add_dependency(%q<pqa>.freeze, [\"<= 0.6\", \"> 0.4\"])
++    s.add_dependency(%q<rake>, [\"> 0.4\"])
++    s.add_dependency(%q<jabber4r>, [\"> 0.0.0\"])
++    s.add_dependency(%q<pqa>, [\"<= 0.6\", \"> 0.4\"])
+   end
+ end
+     SPEC
+@@ -3339,20 +3339,20 @@ Did you mean 'Ruby'?
+ # stub: m 1 ruby lib
+ 
+ Gem::Specification.new do |s|
+-  s.name = "m".freeze
++  s.name = "m"
+   s.version = "1"
+ 
+-  s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
++  s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
+   s.metadata = { "one" => "two", "two" => "three" } if s.respond_to? :metadata=
+-  s.require_paths = ["lib".freeze]
+-  s.authors = ["A User".freeze]
++  s.require_paths = ["lib"]
++  s.authors = ["A User"]
+   s.date = "#{Gem::Specification::TODAY.strftime("%Y-%m-%d")}"
+-  s.description = "This is a test description".freeze
+-  s.email = "example@example.com".freeze
+-  s.files = ["lib/code.rb".freeze]
+-  s.homepage = "http://example.com".freeze
+-  s.rubygems_version = "#{Gem::VERSION}".freeze
+-  s.summary = "this is a summary".freeze
++  s.description = "This is a test description"
++  s.email = "example@example.com"
++  s.files = ["lib/code.rb"]
++  s.homepage = "http://example.com"
++  s.rubygems_version = "#{Gem::VERSION}"
++  s.summary = "this is a summary"
+ end
+     EOF
+ 
+diff -Nuarp ruby-2.3.8.a/tool/mkconfig.rb ruby-2.3.8.b/tool/mkconfig.rb
+--- ruby-2.3.8.a/tool/mkconfig.rb	2017-06-30 06:58:32.000000000 -0400
++++ ruby-2.3.8.b/tool/mkconfig.rb	2020-04-05 01:56:02.027362000 -0400
+@@ -122,7 +122,7 @@ File.foreach "config.status" do |line|
+     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
+     case name
+     when /^prefix$/
+-      val = "(TOPDIR || DESTDIR + #{val})"
++      val = "(((TOPDIR && TOPDIR.empty?) ? nil : TOPDIR) || DESTDIR + #{val})"
+     when /^ARCH_FLAG$/
+       val = "arch_flag || #{val}" if universal
+     when /^UNIVERSAL_ARCHNAMES$/
+diff -Nuarp ruby-2.3.8.a/tool/rbinstall.rb ruby-2.3.8.b/tool/rbinstall.rb
+--- ruby-2.3.8.a/tool/rbinstall.rb	2017-03-27 11:18:38.000000000 -0400
++++ ruby-2.3.8.b/tool/rbinstall.rb	2020-04-05 01:56:03.008433200 -0400
+@@ -328,6 +328,7 @@ sitelibdir = CONFIG["sitelibdir"]
+ sitearchlibdir = CONFIG["sitearchdir"]
+ vendorlibdir = CONFIG["vendorlibdir"]
+ vendorarchlibdir = CONFIG["vendorarchdir"]
++rubygemsdir = CONFIG["rubygemsdir"]
+ mandir = CONFIG["mandir", true]
+ docdir = CONFIG["docdir", true]
+ configure_args = Shellwords.shellwords(CONFIG["configure_args"])
+@@ -406,7 +407,7 @@ end
+ 
+ install?(:doc, :rdoc) do
+   if $rdocdir
+-    ridatadir = File.join(CONFIG['ridir'], CONFIG['ruby_version'], "system")
++    ridatadir = File.join(CONFIG['ridir'], CONFIG['ruby_version_dir_name'] || CONFIG['ruby_version'], "system")
+     prepare "rdoc", ridatadir
+     install_recursive($rdocdir, ridatadir, :mode => $data_mode)
+   end
+@@ -506,7 +507,15 @@ end
+ install?(:local, :comm, :lib) do
+   prepare "library scripts", rubylibdir
+   noinst = %w[README* *.txt *.rdoc *.gemspec]
++  noinst += %w[*ubygems.rb rubygems/ datadir.rb] if rubygemsdir
+   install_recursive(File.join(srcdir, "lib"), rubylibdir, :no_install => noinst, :mode => $data_mode)
++  if rubygemsdir
++    noinst = %w[obsolete.rb]
++    install_recursive(File.join(srcdir, "lib", "rubygems"), File.join(rubygemsdir, "rubygems"), :mode => $data_mode)
++    install_recursive(File.join(srcdir, "lib", "rbconfig"), File.join(rubygemsdir, "rbconfig"), :no_install => noinst, :mode => $data_mode)
++    install(File.join(srcdir, "lib", "ubygems.rb"), File.join(rubygemsdir, "ubygems.rb"), :mode => $data_mode)
++    install(File.join(srcdir, "lib", "rubygems.rb"), File.join(rubygemsdir, "rubygems.rb"), :mode => $data_mode)
++  end
+ end
+ 
+ install?(:local, :comm, :hdr, :'comm-hdr') do

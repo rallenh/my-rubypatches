@@ -1,0 +1,12 @@
+diff -Nuarp ruby-2.3.8.a/ext/win32/lib/win32/resolv.rb ruby-2.3.8.b/ext/win32/lib/win32/resolv.rb
+--- ruby-2.3.8.a/ext/win32/lib/win32/resolv.rb	2017-03-27 12:15:52.000000000 -0400
++++ ruby-2.3.8.b/ext/win32/lib/win32/resolv.rb	2020-04-04 03:22:34.489014700 -0400
+@@ -36,7 +36,7 @@ module Win32
+ 
+ module Kernel32
+   extend Importer
+-  dlload "kernel32"
++  dlload "kernel32.dll"
+ end
+ getv = Kernel32.extern "int GetVersionExA(void *)", :stdcall
+ info = [ 148, 0, 0, 0, 0 ].pack('V5') + "\0" * 128

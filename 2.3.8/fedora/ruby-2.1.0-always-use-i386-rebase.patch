@@ -1,0 +1,12 @@
+diff -Nuarp ruby-2.3.8.a/configure.in ruby-2.3.8.b/configure.in
+--- ruby-2.3.8.a/configure.in	2020-04-04 02:44:26.100886000 -0400
++++ ruby-2.3.8.b/configure.in	2020-04-04 02:46:01.345822200 -0400
+@@ -4340,6 +4340,8 @@ AC_SUBST(vendorarchdir)dnl
+ AC_SUBST(CONFIGURE, "`echo $0 | sed 's|.*/||'`")dnl
+ AC_SUBST(configure_args, "`echo "${ac_configure_args}" | sed 's/\\$/$$/g'`")dnl
+ 
++target_cpu=`echo $target_cpu | sed s/i.86/i386/`
++
+ if test "${universal_binary-no}" = yes ; then
+     arch="universal-${target_os}"
+     if test "${rb_cv_architecture_available}" = yes; then

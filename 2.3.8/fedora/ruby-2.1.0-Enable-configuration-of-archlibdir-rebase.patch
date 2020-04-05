@@ -1,0 +1,15 @@
+diff -Nuarp ruby-2.3.8.a/configure.in ruby-2.3.8.b/configure.in
+--- ruby-2.3.8.a/configure.in	2020-04-04 02:41:24.075870300 -0400
++++ ruby-2.3.8.b/configure.in	2020-04-04 02:43:30.375840700 -0400
+@@ -3686,6 +3686,11 @@ if test ${multiarch+set}; then
+ fi
+ 
+ archlibdir='${libdir}/${arch}'
++AC_ARG_WITH(archlibdir,
++	    AS_HELP_STRING([--with-archlibdir=DIR],
++			   [prefix for libruby [[LIBDIR/ARCH]]]),
++	    [archlibdir="$withval"])
++
+ sitearchlibdir='${libdir}/${sitearch}'
+ archincludedir='${includedir}/${arch}'
+ sitearchincludedir='${includedir}/${sitearch}'

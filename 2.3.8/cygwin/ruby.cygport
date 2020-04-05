@@ -1,0 +1,169 @@
+NAME="ruby"
+VERSION=2.3.6
+RELEASE=1
+CATEGORY="Interpreters Ruby"
+SUMMARY="Interpreted object-oriented scripting language"
+DESCRIPTION="Ruby is the interpreted scripting language for quick and easy
+object-oriented programming.  It has many features to process text files and
+to do system management tasks (as in Perl).  It is simple, straight-forward,
+and extensible."
+HOMEPAGE="http://www.ruby-lang.org/"
+SRC_URI="ftp://ftp.ruby-lang.org/pub/ruby/${VERSION%.*}/ruby-${VERSION}.tar.bz2"
+PATCH_URI="
+	https://bugs.ruby-lang.org/attachments/download/6733/configure-2.3.5.diff
+	fedora/ruby-2.3.0-ruby_version.patch
+	fedora/ruby-2.1.0-Prevent-duplicated-paths-when-empty-version-string-i.patch
+	fedora/ruby-2.1.0-Enable-configuration-of-archlibdir.patch
+	fedora/ruby-2.1.0-always-use-i386.patch
+	fedora/ruby-2.1.0-custom-rubygems-location.patch
+	fedora/ruby-1.9.3-mkmf-verbose.patch
+	fedora/ruby-2.2.3-Generate-preludes-using-miniruby.patch
+	fedora/ruby-2.3.3-Revert-use-frozen-strings-in-serialized-specs.patch
+	1.8.7-cygwin-tcltk.patch
+	2.0.0-cygwin-configure.patch
+	2.0.0-cygwin-rubygems.patch
+	2.0.0-pkgconfig-version.patch
+	2.2.5-cygwin-dlload.patch
+"
+
+PKG_NAMES="${NAME} ${NAME}-devel ${NAME}-doc ${NAME}-tcltk"
+ruby_REQUIRES="rubygems ruby-did_you_mean"
+ruby_CONTENTS="
+	--exclude=capi
+	usr/bin/*
+	usr/lib/ruby/
+	usr/share/doc/
+	usr/share/man/man1/
+	usr/share/ruby/
+	var/lib/rebase/
+"
+ruby_devel_REQUIRES="libcrypt-devel libgmp-devel"
+ruby_devel_CONTENTS="
+	usr/include/ruby-${VERSION%.*}.0/
+	usr/lib/libruby*.dll.a
+	usr/lib/pkgconfig/ruby*.pc
+"
+ruby_doc_CONTENTS="usr/share/ri/"
+ruby_tcltk_SUMMARY="_obsolete"
+ruby_tcltk_REQUIRES="ruby-tk"
+
+DIFF_EXCLUDES=".document revision.h"
+
+src_compile() {
+	# drop the trailing .0 for 2.1?
+	local ruby_version=${VERSION%.*}.0
+
+	cd ${S}
+	cygautoreconf
+	cd ${B}
+	cygconf \
+		--with-archlibdir=/usr/lib \
+		--with-rubylibprefix=/usr/share/ruby/${ruby_version} \
+		--with-rubyarchprefix=/usr/lib/ruby/${ruby_version} \
+		--with-rubyhdrdir=/usr/include/ruby-${ruby_version} \
+		--with-rubyarchhdrdir=/usr/include/ruby-${ruby_version} \
+		--with-sitedir=/usr/local/share/ruby/site_ruby \
+		--with-sitearchdir=/usr/local/lib/ruby/site_ruby/${ruby_version} \
+		--with-sitehdrdir=/usr/local/include/ruby-${ruby_version} \
+		--with-vendordir=/usr/share/ruby/vendor_ruby \
+		--with-vendorarchdir=/usr/lib/ruby/vendor_ruby/${ruby_version} \
+		--with-vendorhdrdir=/usr/include/ruby-${ruby_version}/vendor_ruby \
+		--with-rubygemsdir=/usr/share/rubygems \
+		--with-ruby-version='' \
+		--disable-multiarch \
+		--enable-shared \
+		LDSHARED="${CC} -shared" DLDFLAGS="-Wl,--export-all-symbols"
+	cygmake
+}
+
+src_test() {
+	cd ${B}
+	make test
+}
+
+src_install() {
+	local rblibdir=/usr/share/ruby/${VERSION%.*}.0
+	local rbarchdir=/usr/lib/ruby/${VERSION%.*}.0
+	local rbgemdir=/usr/share/gems
+	local ruby_version=${VERSION%.*}.0
+
+	cd ${B}
+	cygmake install-all DESTDIR=${D}
+	# leave trailing space in case of improper append (e.g. globalhotkeys)
+	sed -i -e "s/ -fdebug-prefix-map\([^ '\"]*\)/ /g" \
+		-e 's|/$(ruby_version)||g' \
+		${D}${rbarchdir}/rbconfig.rb
+
+	# Unbundle; updated versions provided by gems
+	rm -f ${D}${rbgemdir}/cache/*
+	# rubygems
+	rm -f  ${D}/usr/bin/gem
+	rm -fr ${D}/usr/share/rubygems/
+	# bigdecimal
+	rm -f  ${D}${rbarchdir}/bigdecimal.so
+	rm -fr ${D}${rblibdir}/bigdecimal/
+	rm -f  ${D}${rbgemdir}/specifications/default/bigdecimal-*.gemspec
+	# did_you_mean (since 2.3)
+	rm -fr ${D}${rbgemdir}/gems/did_you_mean-*
+	rm -f  ${D}${rbgemdir}/specifications/did_you_mean-*.gemspec
+	# io-console
+	rm -f  ${D}${rbarchdir}/io/console.so
+	rm -fr ${D}${rblibdir}/io/console/
+	rm -f  ${D}${rbgemdir}/specifications/default/io-console-*.gemspec
+	# json
+	rm -fr ${D}${rbarchdir}/json/
+	if ! defined BOOTSTRAP
+	then
+		rm -fr ${D}${rblibdir}/json*
+	fi
+	rm -f  ${D}${rbgemdir}/specifications/default/json-*.gemspec
+	# minitest
+	rm -fr ${D}${rbgemdir}/gems/minitest-*
+	rm -f  ${D}${rbgemdir}/specifications/minitest-*.gemspec
+	# net-telnet (since 2.3)
+	rm -fr ${D}${rbgemdir}/gems/net-telnet-*
+	rm -f  ${D}${rbgemdir}/specifications/net-telnet-*.gemspec
+	# psych
+	if ! defined BOOTSTRAP
+	then
+		rm -f  ${D}${rbarchdir}/psych.so
+		rm -fr ${D}${rblibdir}/psych*
+	fi
+	rm -f  ${D}${rbgemdir}/specifications/default/psych-*.gemspec
+	# power_assert (since 2.3)
+	rm -fr ${D}${rbgemdir}/gems/power_assert-*
+	rm -f  ${D}${rbgemdir}/specifications/power_assert-*.gemspec
+	# rake
+	rm -f  ${D}/usr/bin/rake
+	rm -f  ${D}/usr/share/man/man1/rake.*
+	rm -fr ${D}${rbgemdir}/gems/rake-*
+	rm -f  ${D}${rbgemdir}/specifications/rake-*.gemspec
+	# rdoc
+	rm -f ${D}/usr/bin/{rdoc,ri}
+	rm -f ${D}/usr/share/man/man1/ri.*
+	rm -fr ${D}${rblibdir}/rdoc*
+	rm -fr ${D}${rbgemdir}/gems/rdoc-*
+	rm -f  ${D}${rbgemdir}/specifications/default/rdoc-*.gemspec
+	# test-unit
+	rm -fr ${D}${rbgemdir}/gems/test-unit-*
+	rm -f  ${D}${rbgemdir}/specifications/test-unit-*
+	# tk (since 2.4)
+	rm -f  ${D}${rbarchdir}/tcltklib.so
+	rm -f  ${D}${rbarchdir}/tkutil.so
+	rm -fr ${D}${rblibdir}/{tk*,*tk}.rb
+	rm -fr ${D}${rblibdir}/{tk,tkextlib}/
+#	rm -f  ${D}${rbgemdir}/specifications/tk-*.gemspec
+	# xmlrpc (since 2.4)
+	rm -fr ${D}${rblibdir}/xmlrpc*
+#	rm -f  ${D}${rbgemdir}/specifications/xmlrpc-*.gemspec
+
+	rm -f ${D}/usr/lib/libruby*-static.a
+	dosym libruby${ruby_version//\./}.dll.a /usr/lib/libruby.dll.a
+	dosym ruby-${VERSION%.*}.pc /usr/lib/pkgconfig/ruby.pc
+
+	dodir /var/lib/rebase/dynpath.d
+	echo > ${D}/var/lib/rebase/dynpath.d/${NAME} <<_EOF
+/usr/lib/gems/ruby/${ruby_version}
+/usr/local/lib/ruby/site_ruby/${ruby_version}
+_EOF
+}

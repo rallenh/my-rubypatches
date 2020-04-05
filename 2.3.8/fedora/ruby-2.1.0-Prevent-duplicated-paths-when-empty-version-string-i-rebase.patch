@@ -1,0 +1,63 @@
+diff -Nuarp ruby-2.3.8.a/configure.in ruby-2.3.8.b/configure.in
+--- ruby-2.3.8.a/configure.in	2020-04-04 02:34:26.976435900 -0400
++++ ruby-2.3.8.b/configure.in	2020-04-04 02:36:34.706364300 -0400
+@@ -4276,7 +4276,8 @@ AS_CASE(["$ruby_version_dir_name"],
+ ruby_version_dir=/'${ruby_version_dir_name}'
+ 
+ if test -z "${ruby_version_dir_name}"; then
+-    AC_MSG_ERROR([No ruby version, No place for bundled libraries])
++    unset ruby_version_dir
++    AC_DEFINE(RUBY_LIB_VERSION_BLANK, 1)
+ fi
+ 
+ rubylibdir='${rubylibprefix}'${ruby_version_dir}
+diff -Nuarp ruby-2.3.8.a/loadpath.c ruby-2.3.8.b/loadpath.c
+--- ruby-2.3.8.a/loadpath.c	2020-04-04 02:22:55.300406600 -0400
++++ ruby-2.3.8.b/loadpath.c	2020-04-04 02:39:54.280902600 -0400
+@@ -65,22 +65,34 @@ const char ruby_initial_load_paths[] =
+     RUBY_SEARCH_PATH "\0"
+ #endif
+ #ifndef NO_RUBY_SITE_LIB
++#ifdef RUBY_LIB_VERSION_BLANK
++    RUBY_SITE_LIB "\0"
++#else
+     RUBY_SITE_LIB2 "\0"
++#endif
+ #ifdef RUBY_THINARCH
+     RUBY_SITE_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+ #endif
+     RUBY_SITE_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
++#ifndef RUBY_LIB_VERSION_BLANK
+     RUBY_SITE_LIB "\0"
+ #endif
++#endif
+ 
+ #ifndef NO_RUBY_VENDOR_LIB
++#ifdef RUBY_LIB_VERSION_BLANK
++    RUBY_VENDOR_LIB "\0"
++#else
+     RUBY_VENDOR_LIB2 "\0"
++#endif
+ #ifdef RUBY_THINARCH
+     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+ #endif
+     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
++#ifndef RUBY_LIB_VERSION_BLANK
+     RUBY_VENDOR_LIB "\0"
+ #endif
++#endif
+ 
+     RUBY_LIB "\0"
+ #ifdef RUBY_THINARCH
+diff -Nuarp ruby-2.3.8.a/tool/mkconfig.rb ruby-2.3.8.b/tool/mkconfig.rb
+--- ruby-2.3.8.a/tool/mkconfig.rb	2020-04-04 02:22:55.241454200 -0400
++++ ruby-2.3.8.b/tool/mkconfig.rb	2020-04-04 02:40:26.816449000 -0400
+@@ -122,7 +122,7 @@ File.foreach "config.status" do |line|
+     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
+     case name
+     when /^prefix$/
+-      val = "(TOPDIR || DESTDIR + #{val})"
++      val = "(((TOPDIR && TOPDIR.empty?) ? nil : TOPDIR) || DESTDIR + #{val})"
+     when /^ARCH_FLAG$/
+       val = "arch_flag || #{val}" if universal
+     when /^UNIVERSAL_ARCHNAMES$/

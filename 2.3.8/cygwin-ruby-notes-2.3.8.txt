@@ -1,0 +1,82 @@
+Cygwin Ruby / ruby-install / chruby notes
+
+need to fork chrub/ruby-install/gem_home. ruby-install needs update for newer autotools (configure.ac)
+
+Cygwin can't build a static linked ruby.exe b/c not all of Ruby deps have (or are
+being built with static versions).
+
+Make sure there's no ruby.exe in the path.
+
+Most of this is modeled with/after what Fedora is doing, including their
+./configure and CFLAGS/CXXFLAGS/LDFLAGS.
+
+Ruby 2.3.8
+1. Generate single patch file:
+wget https://cache.ruby-lang.org/pub/ruby/2.3/ruby-2.3.8.tar.gz
+tar -zxvf ruby-2.3.8.tar.gz
+cp -r ruby-2.3.8 ruby-2.3.8.b
+mv ruby-2.3.8 ruby-2.3.8.a
+patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-2.3.0-ruby_version-rebase.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-2.1.0-Prevent-duplicated-paths-when-empty-version-string-i-rebase.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-2.1.0-Enable-configuration-of-archlibdir-rebase.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-2.1.0-always-use-i386-rebase.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-2.1.0-custom-rubygems-location-rebase.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-1.9.3-mkmf-verbose.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-2.1.0-Allow-to-specify-additional-preludes-by-configuratio-rebase.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-2.2.3-Generate-preludes-using-miniruby.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-2.3.1-Rely-on-ldd-to-detect-glibc.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-2.3.5-Revert-experimental-rounding-on-i686-rebase.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-2.3.3-Revert-use-frozen-strings-in-serialized-specs-rebase.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./cygwin/1.8.7-cygwin-tcltk-rebase.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./cygwin/2.0.0-cygwin-configure-rebase.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./cygwin/2.0.0-cygwin-rubygems-rebase.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./cygwin/2.2.5-cygwin-dlload-rebase.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./railsexpress/02-improve-gc-stats.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./railsexpress/03-display-more-detailed-stack-trace.patch;
+diff -Nuarp ruby-2.3.8.a ruby-2.3.8.b > ruby-2.3.8-fedora-cygwin-railsexpress-patches.patch;
+rm -rf ruby-2.3.8.a ruby-2.3.8.b;
+rm -rf ruby-2.3.8.tar.gz;
+
+2. run ruby-install with single patch file:
+don't need b/c we aren't cross building
+  --target=x86_64-pc-cygwin \
+don't need b/c ruby-install sets this
+  --prefix=/opt/rubies/ruby-2.5.7 \
+
+env ruby_version=2.3.8 \
+ruby-install \
+  --patch ruby-2.3.8-fedora-cygwin-railsexpress-patches.patch \
+  --cleanup \
+  --install-dir /opt/rubies/ruby-2.3.8 \
+  ruby 2.3.8 -- \
+  --build=x86_64-pc-cygwin \
+  --host=x86_64-pc-cygwin \
+  --exec-prefix=/opt/rubies/ruby-2.3.8 \
+  --libdir=/opt/rubies/ruby-2.3.8/lib \
+  --localstatedir=/opt/rubies/ruby-2.3.8/var \
+  --datarootdir=/opt/rubies/ruby-2.3.8/share \
+  --with-rubylibprefix=/opt/rubies/ruby-2.3.8/lib/ruby \
+  --with-archlibdir=/opt/rubies/ruby-2.3.8/lib \
+  '--with-rubyarchprefix=$(rubylibprefix)/$(arch)' \
+  '--with-sitedir=$(rubylibprefix)/site_ruby' \
+  '--with-sitearchdir=$(sitelibdir)/$(sitearch)' \
+  '--with-vendordir=$(rubylibprefix)/vendor_ruby' \
+  '--with-vendorarchdir=$(vendorlibdir)/$(sitearch)' \
+  --with-rubyhdrdir=/opt/rubies/ruby-2.3.8/include/ruby \
+  --with-rubyarchhdrdir=/opt/rubies/ruby-2.3.8/include/ruby \
+  '--with-sitearchhdrdir=$(sitehdrdir)/$(arch)' \
+  '--with-vendorarchhdrdir=$(vendorhdrdir)/$(arch)' \
+  '--with-sitehdrdir=$(rubyhdrdir)/site_ruby' \
+  '--with-vendorhdrdir=$(rubyhdrdir)/vendor_ruby' \
+  --with-rubygemsdir=/opt/rubies/ruby-2.3.8/lib \
+  --with-ruby-pc=ruby.pc \
+  --disable-rpath \
+  --enable-shared \
+  '--with-ruby-version=' \
+  --disable-multiarch \
+  --enable-debug-env \
+  --with-openssl-dir=/usr/lib/openssl-1.0 \
+  CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -m64 -mtune=generic -fasynchronous-unwind-tables -fcf-protection" \
+  CXXFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -m64 -mtune=generic -fasynchronous-unwind-tables -fcf-protection" \
+  EXTLDFLAGS="-Wl,--no-undefined -Wl,--no-allow-shlib-undefined -Wl,--as-needed -Wl,--high-entropy-va -Wl,--export-all-symbols -Wl,--dynamicbase -Wl,--nxcompat"
+
