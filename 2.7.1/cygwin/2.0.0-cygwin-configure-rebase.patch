@@ -1,0 +1,30 @@
+diff -Nuarp ruby-2.6.6.a/configure.ac ruby-2.6.6.b/configure.ac
+--- ruby-2.6.6.a/configure.ac	2020-04-04 03:54:05.089198900 -0400
++++ ruby-2.6.6.b/configure.ac	2020-04-04 03:55:13.339246700 -0400
+@@ -2926,7 +2926,7 @@ AS_IF([test "$dln_a_out_works" = yes], [
+     [darwin*], [
+ 	SOEXT=dylib
+ 	DLEXT=bundle],
+-    [cygwin*|mingw*|*djgpp*], [
++    [mingw*|*djgpp*], [
+ 	LOAD_RELATIVE=1
+ 	SOEXT=dll
+ 	DLEXT=so],
+@@ -3241,7 +3241,7 @@ AS_CASE("$enable_shared", [yes], [
+     [interix*], [
+ 	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
+ 	],
+-    [mingw*|cygwin*|mswin*], [
++    [mingw*|mswin*], [
+ 	LIBRUBY_RELATIVE=yes
+ 	])
+ ], [
+@@ -3691,7 +3691,7 @@ test "$program_suffix" != NONE &&
+
+ RUBY_INSTALL_NAME="${ri_prefix}"'$(RUBY_BASE_NAME)'"${ri_suffix}"
+ AS_CASE(["$target_os"],
+-  [cygwin*|mingw*], [
++  [mingw*], [
+     RUBYW_INSTALL_NAME="${ri_prefix}"'$(RUBYW_BASE_NAME)'"${ri_suffix}"
+     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
+     ])
