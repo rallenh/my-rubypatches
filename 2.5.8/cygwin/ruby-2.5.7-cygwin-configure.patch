@@ -1,0 +1,21 @@
+diff -Nuarp ruby-2.5.7.a/configure.ac ruby-2.5.7.b/configure.ac
+--- ruby-2.5.7.a/configure.ac	2020-04-03 21:27:19.826371200 -0400
++++ ruby-2.5.7.b/configure.ac	2020-04-03 21:29:28.485695600 -0400
+@@ -3785,7 +3785,7 @@ AS_CASE("$enable_shared", [yes], [
+     [interix*], [
+ 	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
+ 	],
+-    [mingw*|cygwin*|mswin*], [
++    [mingw*|mswin*], [
+ 	LIBRUBY_RELATIVE=yes
+ 	])
+ ], [
+@@ -4200,7 +4200,7 @@ test "$program_suffix" != NONE &&
+ 
+ RUBY_INSTALL_NAME="${ri_prefix}"'$(RUBY_BASE_NAME)'"${ri_suffix}"
+ AS_CASE(["$target_os"],
+-  [cygwin*|mingw*], [
++  [mingw*], [
+     RUBYW_INSTALL_NAME="${ri_prefix}"'$(RUBYW_BASE_NAME)'"${ri_suffix}"
+     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
+     ])
