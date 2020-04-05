@@ -10,6 +10,8 @@ Make sure there's no ruby.exe in the path.
 Most of this is modeled with/after what Fedora is doing, including their
 ./configure and CFLAGS/CXXFLAGS/LDFLAGS.
 
+Built with OpenSSL 1.0
+
 Ruby 2.3.8
 1. Generate single patch file:
 wget https://cache.ruby-lang.org/pub/ruby/2.3/ruby-2.3.8.tar.gz
@@ -41,7 +43,7 @@ rm -rf ruby-2.3.8.tar.gz;
 don't need b/c we aren't cross building
   --target=x86_64-pc-cygwin \
 don't need b/c ruby-install sets this
-  --prefix=/opt/rubies/ruby-2.5.7 \
+  --prefix=/opt/rubies/ruby-2.3.8 \
 
 env ruby_version=2.3.8 \
 ruby-install \
