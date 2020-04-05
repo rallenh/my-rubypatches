@@ -1,0 +1,153 @@
+NAME="ruby"
+VERSION=2.6.4
+RELEASE=1
+CATEGORY="Interpreters Ruby"
+SUMMARY="Interpreted object-oriented scripting language"
+DESCRIPTION="Ruby is the interpreted scripting language for quick and easy
+object-oriented programming.  It has many features to process text files and
+to do system management tasks (as in Perl).  It is simple, straight-forward,
+and extensible."
+HOMEPAGE="http://www.ruby-lang.org/"
+SRC_URI="https://cache.ruby-lang.org/pub/ruby/${VERSION%.*}/ruby-${VERSION}.tar.bz2"
+PATCH_URI="
+	fedora/ruby-2.3.0-ruby_version.patch
+	fedora/ruby-2.1.0-Prevent-duplicated-paths-when-empty-version-string-i.patch
+	fedora/ruby-2.1.0-Enable-configuration-of-archlibdir.patch
+	fedora/ruby-2.1.0-always-use-i386.patch
+	fedora/ruby-2.1.0-custom-rubygems-location.patch
+	fedora/ruby-1.9.3-mkmf-verbose.patch
+	fedora/ruby-2.2.3-Generate-preludes-using-miniruby.patch
+	fedora/ruby-2.6.0-config-support-include-directive.patch
+	fedora/ruby-2.6.0-use-larger-keys-for-SSL-tests.patch
+	2.0.0-cygwin-configure.patch
+	2.0.0-cygwin-rubygems.patch
+	2.0.0-pkgconfig-version.patch
+	2.5.1-win32-resolv.patch
+"
+
+PKG_NAMES="${NAME} ${NAME}-devel ${NAME}-doc ${NAME}-tcltk"
+ruby_REQUIRES="rubygems ruby-did_you_mean ca-certificates"
+ruby_OBSOLETES="ruby-bigdecimal ruby-bundler ruby-io-console ruby-json ruby-psych"
+ruby_CONTENTS="
+	--exclude=capi
+	usr/bin/bundle*
+	usr/bin/cygruby*.dll
+	usr/bin/erb
+	usr/bin/irb
+	usr/bin/ruby.exe
+	usr/lib/ruby/
+	usr/share/doc/
+	usr/share/gems/specifications/default/
+	usr/share/man/man1/*
+	usr/share/man/man5/*
+	usr/share/ruby/
+	var/lib/rebase/
+"
+ruby_devel_REQUIRES="libcrypt-devel libgmp-devel"
+ruby_devel_CONTENTS="
+	usr/include/ruby-${VERSION%.*}/
+	usr/lib/libruby*.dll.a
+	usr/lib/pkgconfig/ruby*.pc
+"
+ruby_doc_OBSOLETES="ruby-bigdecimal-doc ruby-bundler-doc ruby-io-console-doc ruby-json-doc ruby-psych-doc"
+ruby_doc_CONTENTS="usr/share/ri/"
+ruby_tcltk_SUMMARY="_obsolete"
+ruby_tcltk_REQUIRES="ruby-tk"
+ruby_debuginfo_OBSOLETES="ruby-bigdecimal-debuginfo ruby-io-console-debuginfo ruby-json-debuginfo ruby-psych-debuginfo"
+
+DIFF_EXCLUDES=".document revision.h"
+
+src_compile() {
+	local ruby_version=${VERSION%.*}
+
+	cd ${S}
+	cygautoreconf
+	cd ${B}
+	cygconf \
+		--with-archlibdir=/usr/lib \
+		--with-rubylibprefix=/usr/share/ruby/${ruby_version} \
+		--with-rubyarchprefix=/usr/lib/ruby/${ruby_version} \
+		--with-rubyhdrdir=/usr/include/ruby-${ruby_version} \
+		--with-rubyarchhdrdir=/usr/include/ruby-${ruby_version} \
+		--with-sitedir=/usr/local/share/ruby/site_ruby \
+		--with-sitearchdir=/usr/local/lib/ruby/site_ruby/${ruby_version} \
+		--with-sitehdrdir=/usr/local/include/ruby-${ruby_version} \
+		--with-vendordir=/usr/share/ruby/vendor_ruby \
+		--with-vendorarchdir=/usr/lib/ruby/vendor_ruby/${ruby_version} \
+		--with-vendorhdrdir=/usr/include/ruby-${ruby_version}/vendor_ruby \
+		--with-rubygemsdir=/usr/share/rubygems \
+		--with-ruby-version='' \
+		--disable-multiarch \
+		--enable-shared \
+		LDSHARED="${CC} -shared" DLDFLAGS="-Wl,--export-all-symbols"
+	cygmake
+}
+
+src_test() {
+	cd ${B}
+	make test
+}
+
+src_install() {
+	local ruby_version=${VERSION%.*}
+	local rblibdir=/usr/share/ruby/${ruby_version}
+	local rbarchdir=/usr/lib/ruby/${ruby_version}
+	local rbgemdir=/usr/share/gems
+
+	cd ${B}
+	cygmake install-all DESTDIR=${D}
+	# leave trailing space in case of improper append (e.g. globalhotkeys)
+	sed -i -e "s/ -fdebug-prefix-map\([^ '\"]*\)/ /g" \
+		-e 's|/$(ruby_version)||g' \
+		${D}${rbarchdir}/rbconfig.rb
+
+	# the libraries are in default locations so no need for gem wrappers
+	mv -f ${D}${rbgemdir}/gems/*/exe/* ${D}/usr/bin/
+
+	# Unbundle; updated versions provided by gems
+	rm -f ${D}${rbgemdir}/cache/*
+	# rubygems
+	rm -f  ${D}/usr/bin/gem
+	rm -fr ${D}/usr/share/rubygems/
+	# bundler: certs
+	rm -fr ${D}${rblibdir}/bundler/ssl_certs/
+	# did_you_mean (since 2.3)
+	rm -fr ${D}${rbgemdir}/gems/did_you_mean-*
+	rm -f  ${D}${rbgemdir}/specifications/did_you_mean-*.gemspec
+	# minitest
+	rm -fr ${D}${rbgemdir}/gems/minitest-*
+	rm -f  ${D}${rbgemdir}/specifications/minitest-*.gemspec
+	# net-telnet (since 2.3)
+	rm -fr ${D}${rbgemdir}/gems/net-telnet-*
+	rm -f  ${D}${rbgemdir}/specifications/net-telnet-*.gemspec
+	# power_assert (since 2.3)
+	rm -fr ${D}${rbgemdir}/gems/power_assert-*
+	rm -f  ${D}${rbgemdir}/specifications/power_assert-*.gemspec
+	# rake
+	rm -f  ${D}/usr/bin/rake
+	rm -f  ${D}/usr/share/man/man1/rake.*
+	rm -fr ${D}${rbgemdir}/gems/rake-*
+	rm -f  ${D}${rbgemdir}/specifications/rake-*.gemspec
+	# rdoc
+	rm -f ${D}/usr/bin/{rdoc,ri}
+	rm -f ${D}/usr/share/man/man1/ri.*
+	rm -fr ${D}${rblibdir}/rdoc*
+	rm -fr ${D}${rbgemdir}/gems/rdoc-*
+	rm -f  ${D}${rbgemdir}/specifications/default/rdoc-*.gemspec
+	# test-unit
+	rm -fr ${D}${rbgemdir}/gems/test-unit-*
+	rm -f  ${D}${rbgemdir}/specifications/test-unit-*
+	# xmlrpc (since 2.4)
+	rm -fr ${D}${rbgemdir}/gems/xmlrpc-*
+	rm -f  ${D}${rbgemdir}/specifications/xmlrpc-*.gemspec
+
+	rm -f ${D}/usr/lib/libruby*-static.a
+	dosym libruby${ruby_version//\./}0.dll.a /usr/lib/libruby.dll.a
+	dosym ruby-${VERSION%.*}.pc /usr/lib/pkgconfig/ruby.pc
+
+	dodir /var/lib/rebase/dynpath.d
+	echo > ${D}/var/lib/rebase/dynpath.d/${NAME} <<_EOF
+/usr/lib/gems/ruby/${ruby_version}
+/usr/local/lib/ruby/site_ruby/${ruby_version}
+_EOF
+}
