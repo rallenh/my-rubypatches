@@ -41,6 +41,9 @@ don't need b/c we aren't cross building
   --target=x86_64-redhat-linux-gnu \
 don't need b/c ruby-install sets this
   --prefix=/opt/rubies/ruby-2.3.8 \
+need to surpress ruby-install's use of the system packager.
+in this case, I know better.
+  --no-install-deps \
 
 env ruby_version=2.3.8 \
 sudo ruby-install \
