@@ -1,0 +1,76 @@
+Fedora 30 Ruby / ruby-install / chruby notes
+
+need to fork chrub/ruby-install/gem_home. ruby-install needs update for newer autotools (configure.ac)
+
+On Fedora, build as static binary b/c I won't want to mess with LD_LIBRARY/ld.conf knobs, as chruby
+is installing in a directory not in ld.conf configuration (loader will fail).
+
+Make sure there's no ruby in the path.
+
+# for Ruby 2.5.8
+1. Generate single patch file:
+wget https://cache.ruby-lang.org/pub/ruby/2.5/ruby-2.5.8.tar.gz;
+tar -zxvf ruby-2.5.8.tar.gz;
+cp -r ruby-2.5.8 ruby-2.5.8.b;
+mv ruby-2.5.8 ruby-2.5.8.a;
+patch -p1 -d ./ruby-2.5.8.b < ./fedora/ruby-2.3.0-ruby_version-rebase.patch;
+patch -p1 -d ./ruby-2.5.8.b < ./fedora/ruby-2.1.0-Prevent-duplicated-paths-when-empty-version-string-i.patch;
+patch -p1 -d ./ruby-2.5.8.b < ./fedora/ruby-2.1.0-Enable-configuration-of-archlibdir.patch;
+patch -p1 -d ./ruby-2.5.8.b < ./fedora/ruby-2.1.0-always-use-i386.patch;
+patch -p1 -d ./ruby-2.5.8.b < ./fedora/ruby-2.1.0-custom-rubygems-location-rebase.patch;
+patch -p1 -d ./ruby-2.5.8.b < ./fedora/ruby-1.9.3-mkmf-verbose.patch;
+patch -p1 -d ./ruby-2.5.8.b < ./fedora/ruby-2.1.0-Allow-to-specify-additional-preludes-by-configuratio.patch;
+patch -p1 -d ./ruby-2.5.8.b < ./fedora/ruby-2.2.3-Generate-preludes-using-miniruby.patch;
+patch -p1 -d ./ruby-2.5.8.b < ./fedora/ruby-2.3.1-Rely-on-ldd-to-detect-glibc.patch;
+patch -p1 -d ./ruby-2.5.8.b < ./fedora/ruby-2.6.0-library-options-to-MAINLIBS.patch;
+patch -p1 -d ./ruby-2.5.8.b < ./fedora/ruby-2.5.1-Avoid-need-of-C++-compiler-to-pass-the-test-suite.patch;
+patch -p1 -d ./ruby-2.5.8.b < ./railsexpress/02-improve-gc-stats.patch;
+patch -p1 -d ./ruby-2.5.8.b < ./railsexpress/03-more-detailed-stacktrace.patch;
+diff -Nuarp ruby-2.5.8.a ruby-2.5.8.b > ruby-2.5.8-fedora-railsexpress-patches.patch;
+rm -rf ruby-2.5.8.a ruby-2.5.8.b;
+rm -rf ruby-2.5.8.tar.gz;
+
+2. run ruby-install with single patch file:
+don't need b/c we aren't cross building
+  --target=x86_64-redhat-linux-gnu \
+don't need b/c ruby-install sets this
+  --prefix=/opt/rubies/ruby-2.5.8 \
+
+env ruby_version=2.5.8 \
+sudo ruby-install \
+  --patch ruby-2.5.8-fedora-railsexpress-patches.patch \
+  --cleanup \
+  --install-dir /opt/rubies/ruby-2.5.8 \
+  ruby 2.5.8 -- \
+  --build=x86_64-redhat-linux-gnu \
+  --host=x86_64-redhat-linux-gnu \
+  --exec-prefix=/opt/rubies/ruby-2.5.8 \
+  --libdir=/opt/rubies/ruby-2.5.8/lib \
+  --localstatedir=/opt/rubies/ruby-2.5.8/var \
+  --datarootdir=/opt/rubies/ruby-2.5.8/share \
+  --with-rubylibprefix=/opt/rubies/ruby-2.5.8/lib/ruby \
+  --with-archlibdir=/opt/rubies/ruby-2.5.8/lib \
+  '--with-rubyarchprefix=$(rubylibprefix)/$(arch)' \
+  '--with-sitedir=$(rubylibprefix)/site_ruby' \
+  '--with-sitearchdir=$(sitelibdir)/$(sitearch)' \
+  '--with-vendordir=$(rubylibprefix)/vendor_ruby' \
+  '--with-vendorarchdir=$(vendorlibdir)/$(sitearch)' \
+  --with-rubyhdrdir=/opt/rubies/ruby-2.5.8/include/ruby \
+  --with-rubyarchhdrdir=/opt/rubies/ruby-2.5.8/include/ruby \
+  '--with-sitearchhdrdir=$(sitehdrdir)/$(arch)' \
+  '--with-vendorarchhdrdir=$(vendorhdrdir)/$(arch)' \
+  '--with-sitehdrdir=$(rubyhdrdir)/site_ruby' \
+  '--with-vendorhdrdir=$(rubyhdrdir)/vendor_ruby' \
+  --with-rubygemsdir=/opt/rubies/ruby-2.5.8/lib/rubygems \
+  --with-ruby-pc=ruby.pc \
+  --with-compress-debug-sections=no \
+  --disable-rpath \
+  --disable-shared \
+  --enable-static \
+  '--with-ruby-version=' \
+  --disable-multiarch \
+  --enable-debug-env \
+  CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection" \
+  CXXFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection" \
+  EXTLDFLAGS="-Wl,-z,relro -Wl,--as-needed  -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld"
+
