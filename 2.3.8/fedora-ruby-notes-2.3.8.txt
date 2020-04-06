@@ -2,6 +2,9 @@ Fedora 30 Ruby / ruby-install / chruby notes
 
 need to fork chrub/ruby-install/gem_home. ruby-install needs update for newer autotools (configure.ac)
 
+On Fedora, build as static binary b/c I won't want to mess with LD_LIBRARY/ld.conf knobs, as chruby
+is installing in a directory not in ld.conf configuration (loader will fail).
+
 Make sure there's no ruby in the path.
 
 Built with OpenSSL 1.0
