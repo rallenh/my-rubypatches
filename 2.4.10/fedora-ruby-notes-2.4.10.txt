@@ -41,7 +41,6 @@ sudo ruby-install \
   --patch ruby-2.4.10-fedora-railsexpress-patches.patch \
   --cleanup \
   --install-dir /opt/rubies/ruby-2.4.10 \
-  --no-install-deps \
   ruby 2.4.10 -- \
   --build=x86_64-redhat-linux-gnu \
   --host=x86_64-redhat-linux-gnu \
