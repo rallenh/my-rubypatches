@@ -53,7 +53,6 @@ don't need b/c we aren't cross building
 don't need b/c ruby-install sets this
   --prefix=/opt/rubies/ruby-2.7.1 \
 
-env ruby_version=2.7.1 \
 ruby-install \
   --patch ruby-2.7.1-fedora-cygwin-railsexpress-patches.patch \
   --cleanup \
@@ -83,7 +82,6 @@ ruby-install \
   --with-compress-debug-sections=no \
   --disable-rpath \
   --enable-shared \
-  '--with-ruby-version=' \
   --disable-multiarch \
   --enable-debug-env \
   CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -m64 -mtune=generic -fasynchronous-unwind-tables -fcf-protection" \
