@@ -29,6 +29,7 @@ patch -p1 -d ./ruby-2.4.10.b < ./fedora/ruby-2.4.3-Fix-Command-injection-in-lib-
 patch -p1 -d ./ruby-2.4.10.b < ./fedora/ruby-2.5.2-ruby-test_io-test_select_leak-rebase.patch;
 patch -p1 -d ./ruby-2.4.10.b < ./cygwin/2.0.0-cygwin-configure-rebase.patch;
 patch -p1 -d ./ruby-2.4.10.b < ./cygwin/2.0.0-cygwin-rubygems-rebase.patch;
+patch -p1 -d ./ruby-2.4.10.b < ./cygwin/ruby-2.4.10-gcc-10-extern-globals.patch;
 patch -p1 -d ./ruby-2.4.10.b < ./railsexpress/02-improve-gc-stats.patch;
 patch -p1 -d ./ruby-2.4.10.b < ./railsexpress/03-display-more-detailed-stack-trace.patch;
 diff -Nuarp ruby-2.4.10.a ruby-2.4.10.b > ruby-2.4.10-fedora-cygwin-railsexpress-patches.patch;
@@ -41,7 +42,6 @@ don't need b/c we aren't cross building
 don't need b/c ruby-install sets this
   --prefix=/opt/rubies/ruby-2.4.10 \
 
-env ruby_version=2.4.10 \
 ruby-install \
   --patch ruby-2.4.10-fedora-cygwin-railsexpress-patches.patch \
   --cleanup \
@@ -71,9 +71,9 @@ ruby-install \
   --with-compress-debug-sections=no \
   --disable-rpath \
   --enable-shared \
-  '--with-ruby-version=' \
   --disable-multiarch \
   --enable-debug-env \
   CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -m64 -mtune=generic -fasynchronous-unwind-tables -fcf-protection" \
   CXXFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -m64 -mtune=generic -fasynchronous-unwind-tables -fcf-protection" \
   EXTLDFLAGS="-Wl,--no-undefined -Wl,--no-allow-shlib-undefined -Wl,--as-needed -Wl,--high-entropy-va -Wl,--export-all-symbols -Wl,--dynamicbase -Wl,--nxcompat"
+

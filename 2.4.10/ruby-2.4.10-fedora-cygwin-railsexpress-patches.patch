@@ -1,6 +1,6 @@
 diff -Nuarp ruby-2.4.10.a/common.mk ruby-2.4.10.b/common.mk
 --- ruby-2.4.10.a/common.mk	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/common.mk	2020-04-05 02:18:06.681932600 -0400
++++ ruby-2.4.10.b/common.mk	2020-11-15 15:16:19.363337300 -0500
 @@ -144,7 +144,7 @@ ALLOBJS       = $(NORMALMAINOBJ) $(MINIO
  GOLFOBJS      = goruby.$(OBJEXT) golf_prelude.$(OBJEXT)
  
@@ -24,7 +24,7 @@ diff -Nuarp ruby-2.4.10.a/common.mk ruby-2.4.10.b/common.mk
  {$(VPATH)}golf_prelude.c: $(COMPILE_PRELUDE) {$(srcdir)}golf_prelude.rb
 diff -Nuarp ruby-2.4.10.a/configure.in ruby-2.4.10.b/configure.in
 --- ruby-2.4.10.a/configure.in	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/configure.in	2020-04-05 02:18:08.074525200 -0400
++++ ruby-2.4.10.b/configure.in	2020-11-15 15:16:49.363385300 -0500
 @@ -271,7 +271,7 @@ RUBY_BASE_NAME=`echo ruby | sed "$progra
  RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
  AC_SUBST(RUBY_BASE_NAME)
@@ -213,7 +213,7 @@ diff -Nuarp ruby-2.4.10.a/configure.in ruby-2.4.10.b/configure.in
  		[
 diff -Nuarp ruby-2.4.10.a/eval_error.c ruby-2.4.10.b/eval_error.c
 --- ruby-2.4.10.a/eval_error.c	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/eval_error.c	2020-04-05 02:18:09.261492700 -0400
++++ ruby-2.4.10.b/eval_error.c	2020-11-15 15:17:20.414770300 -0500
 @@ -160,8 +160,8 @@ rb_threadptr_error_print(rb_thread_t *vo
          int skip = eclass == rb_eSysStackError;
  
@@ -225,9 +225,219 @@ diff -Nuarp ruby-2.4.10.a/eval_error.c ruby-2.4.10.b/eval_error.c
  
  	for (i = 1; i < len; i++) {
  	    VALUE line = RARRAY_AREF(errat, i);
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole.c ruby-2.4.10.b/ext/win32ole/win32ole.c
+--- ruby-2.4.10.a/ext/win32ole/win32ole.c	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole.c	2020-11-15 15:17:05.928685800 -0500
+@@ -35,6 +35,7 @@ typedef HWND (WINAPI FNHTMLHELP)(HWND hw
+                                  UINT uCommand, DWORD dwData);
+ typedef BOOL (FNENUMSYSEMCODEPAGES) (CODEPAGE_ENUMPROC, DWORD);
+ VALUE cWIN32OLE;
++LCID cWIN32OLE_lcid;
+ 
+ #if defined(RB_THREAD_SPECIFIC) && (defined(__CYGWIN__))
+ static RB_THREAD_SPECIFIC BOOL g_ole_initialized;
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole.h ruby-2.4.10.b/ext/win32ole/win32ole.h
+--- ruby-2.4.10.a/ext/win32ole/win32ole.h	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole.h	2020-11-15 15:17:05.942386800 -0500
+@@ -112,8 +112,8 @@ struct oledata {
+     IDispatch *pDispatch;
+ };
+ 
+-VALUE cWIN32OLE;
+-LCID cWIN32OLE_lcid;
++extern VALUE cWIN32OLE;
++extern LCID cWIN32OLE_lcid;
+ 
+ struct oledata *oledata_get_struct(VALUE obj);
+ LPWSTR ole_vstr2wc(VALUE vstr);
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_error.c ruby-2.4.10.b/ext/win32ole/win32ole_error.c
+--- ruby-2.4.10.a/ext/win32ole/win32ole_error.c	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_error.c	2020-11-15 15:17:05.965711100 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE eWIN32OLERuntimeError;
++
+ static VALUE ole_hresult2msg(HRESULT hr);
+ 
+ static VALUE
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_error.h ruby-2.4.10.b/ext/win32ole/win32ole_error.h
+--- ruby-2.4.10.a/ext/win32ole/win32ole_error.h	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_error.h	2020-11-15 15:17:05.979947500 -0500
+@@ -1,7 +1,7 @@
+ #ifndef WIN32OLE_ERROR_H
+ #define WIN32OLE_ERROR_H 1
+ 
+-VALUE eWIN32OLERuntimeError;
++extern VALUE eWIN32OLERuntimeError;
+ NORETURN(PRINTF_ARGS(void ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...), 3, 4));
+ void Init_win32ole_error(void);
+ 
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_method.c ruby-2.4.10.b/ext/win32ole/win32ole_method.c
+--- ruby-2.4.10.a/ext/win32ole/win32ole_method.c	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_method.c	2020-11-15 15:17:06.000261500 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE cWIN32OLE_METHOD;
++
+ static void olemethod_free(void *ptr);
+ static size_t olemethod_size(const void *ptr);
+ static VALUE ole_method_sub(VALUE self, ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE name);
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_method.h ruby-2.4.10.b/ext/win32ole/win32ole_method.h
+--- ruby-2.4.10.a/ext/win32ole/win32ole_method.h	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_method.h	2020-11-15 15:17:06.017989500 -0500
+@@ -7,7 +7,7 @@ struct olemethoddata {
+     UINT index;
+ };
+ 
+-VALUE cWIN32OLE_METHOD;
++extern VALUE cWIN32OLE_METHOD;
+ VALUE folemethod_s_allocate(VALUE klass);
+ VALUE ole_methods_from_typeinfo(ITypeInfo *pTypeInfo, int mask);
+ VALUE create_win32ole_method(ITypeInfo *pTypeInfo, VALUE name);
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_record.c ruby-2.4.10.b/ext/win32ole/win32ole_record.c
+--- ruby-2.4.10.a/ext/win32ole/win32ole_record.c	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_record.c	2020-11-15 15:17:06.053481400 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE cWIN32OLE_RECORD;
++
+ struct olerecorddata {
+     IRecordInfo *pri;
+     void *pdata;
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_record.h ruby-2.4.10.b/ext/win32ole/win32ole_record.h
+--- ruby-2.4.10.a/ext/win32ole/win32ole_record.h	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_record.h	2020-11-15 15:17:06.081403600 -0500
+@@ -1,7 +1,7 @@
+ #ifndef WIN32OLE_RECORD_H
+ #define WIN32OLE_RECORD_H 1
+ 
+-VALUE cWIN32OLE_RECORD;
++extern VALUE cWIN32OLE_RECORD;
+ void ole_rec2variant(VALUE rec, VARIANT *var);
+ void olerecord_set_ivar(VALUE obj, IRecordInfo *pri, void *prec);
+ VALUE create_win32ole_record(IRecordInfo *pri, void *prec);
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_type.c ruby-2.4.10.b/ext/win32ole/win32ole_type.c
+--- ruby-2.4.10.a/ext/win32ole/win32ole_type.c	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_type.c	2020-11-15 15:17:06.118534300 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE cWIN32OLE_TYPE;
++
+ struct oletypedata {
+     ITypeInfo *pTypeInfo;
+ };
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_type.h ruby-2.4.10.b/ext/win32ole/win32ole_type.h
+--- ruby-2.4.10.a/ext/win32ole/win32ole_type.h	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_type.h	2020-11-15 15:17:06.146419000 -0500
+@@ -1,6 +1,8 @@
+ #ifndef WIN32OLE_TYPE_H
+ #define WIN32OLE_TYPE_H 1
+-VALUE cWIN32OLE_TYPE;
++
++extern VALUE cWIN32OLE_TYPE;
++
+ VALUE create_win32ole_type(ITypeInfo *pTypeInfo, VALUE name);
+ ITypeInfo *itypeinfo(VALUE self);
+ VALUE ole_type_from_itypeinfo(ITypeInfo *pTypeInfo);
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_typelib.c ruby-2.4.10.b/ext/win32ole/win32ole_typelib.c
+--- ruby-2.4.10.a/ext/win32ole/win32ole_typelib.c	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_typelib.c	2020-11-15 15:17:06.161145800 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE cWIN32OLE_TYPELIB;
++
+ struct oletypelibdata {
+     ITypeLib *pTypeLib;
+ };
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_typelib.h ruby-2.4.10.b/ext/win32ole/win32ole_typelib.h
+--- ruby-2.4.10.a/ext/win32ole/win32ole_typelib.h	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_typelib.h	2020-11-15 15:17:06.176355100 -0500
+@@ -1,7 +1,7 @@
+ #ifndef WIN32OLE_TYPELIB_H
+ #define WIN32OLE_TYPELIB_H 1
+ 
+-VALUE cWIN32OLE_TYPELIB;
++extern VALUE cWIN32OLE_TYPELIB;
+ 
+ void Init_win32ole_typelib(void);
+ ITypeLib * itypelib(VALUE self);
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_variable.c ruby-2.4.10.b/ext/win32ole/win32ole_variable.c
+--- ruby-2.4.10.a/ext/win32ole/win32ole_variable.c	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_variable.c	2020-11-15 15:17:06.202667700 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE cWIN32OLE_VARIABLE;
++
+ struct olevariabledata {
+     ITypeInfo *pTypeInfo;
+     UINT index;
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_variable.h ruby-2.4.10.b/ext/win32ole/win32ole_variable.h
+--- ruby-2.4.10.a/ext/win32ole/win32ole_variable.h	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_variable.h	2020-11-15 15:17:06.219385400 -0500
+@@ -1,7 +1,7 @@
+ #ifndef WIN32OLE_VARIABLE_H
+ #define WIN32OLE_VARIABLE_H 1
+ 
+-VALUE cWIN32OLE_VARIABLE;
++extern VALUE cWIN32OLE_VARIABLE;
+ VALUE create_win32ole_variable(ITypeInfo *pTypeInfo, UINT index, VALUE name);
+ void Init_win32ole_variable(void);
+ 
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_variant.c ruby-2.4.10.b/ext/win32ole/win32ole_variant.c
+--- ruby-2.4.10.a/ext/win32ole/win32ole_variant.c	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_variant.c	2020-11-15 15:17:06.232015200 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE cWIN32OLE_VARIANT;
++
+ struct olevariantdata {
+     VARIANT realvar;
+     VARIANT var;
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_variant.h ruby-2.4.10.b/ext/win32ole/win32ole_variant.h
+--- ruby-2.4.10.a/ext/win32ole/win32ole_variant.h	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_variant.h	2020-11-15 15:17:06.252091300 -0500
+@@ -1,7 +1,7 @@
+ #ifndef WIN32OLE_VARIANT_H
+ #define WIN32OLE_VARIANT_H 1
+ 
+-VALUE cWIN32OLE_VARIANT;
++extern VALUE cWIN32OLE_VARIANT;
+ void ole_variant2variant(VALUE val, VARIANT *var);
+ void Init_win32ole_variant(void);
+ 
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_variant_m.c ruby-2.4.10.b/ext/win32ole/win32ole_variant_m.c
+--- ruby-2.4.10.a/ext/win32ole/win32ole_variant_m.c	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_variant_m.c	2020-11-15 15:17:06.265600200 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE mWIN32OLE_VARIANT;
++
+ void Init_win32ole_variant_m(void)
+ {
+     /*
+diff -Nuarp ruby-2.4.10.a/ext/win32ole/win32ole_variant_m.h ruby-2.4.10.b/ext/win32ole/win32ole_variant_m.h
+--- ruby-2.4.10.a/ext/win32ole/win32ole_variant_m.h	2020-03-31 07:42:18.000000000 -0400
++++ ruby-2.4.10.b/ext/win32ole/win32ole_variant_m.h	2020-11-15 15:17:06.283322400 -0500
+@@ -1,7 +1,7 @@
+ #ifndef WIN32OLE_VARIANT_M_H
+ #define WIN32OLE_VARIANT_M_H 1
+ 
+-VALUE mWIN32OLE_VARIANT;
++extern VALUE mWIN32OLE_VARIANT;
+ void Init_win32ole_variant_m(void);
+ 
+ #endif
 diff -Nuarp ruby-2.4.10.a/gc.c ruby-2.4.10.b/gc.c
 --- ruby-2.4.10.a/gc.c	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/gc.c	2020-04-05 02:18:08.839090400 -0400
++++ ruby-2.4.10.b/gc.c	2020-11-15 15:17:13.499238200 -0500
 @@ -521,6 +521,8 @@ typedef struct rb_objspace {
  #if GC_ENABLE_INCREMENTAL_MARK
  	unsigned int during_incremental_marking : 1;
@@ -578,7 +788,7 @@ diff -Nuarp ruby-2.4.10.a/gc.c ruby-2.4.10.b/gc.c
      gc_constants = rb_hash_new();
 diff -Nuarp ruby-2.4.10.a/include/ruby/intern.h ruby-2.4.10.b/include/ruby/intern.h
 --- ruby-2.4.10.a/include/ruby/intern.h	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/include/ruby/intern.h	2020-04-05 02:18:08.850084400 -0400
++++ ruby-2.4.10.b/include/ruby/intern.h	2020-11-15 15:17:13.512426100 -0500
 @@ -496,6 +496,9 @@ void rb_gc_finalize_deferred(void);
  void rb_gc_call_finalizer_at_exit(void);
  VALUE rb_gc_enable(void);
@@ -603,7 +813,7 @@ diff -Nuarp ruby-2.4.10.a/include/ruby/intern.h ruby-2.4.10.b/include/ruby/inter
  VALUE rb_check_hash_type(VALUE);
 diff -Nuarp ruby-2.4.10.a/lib/mkmf.rb ruby-2.4.10.b/lib/mkmf.rb
 --- ruby-2.4.10.a/lib/mkmf.rb	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/lib/mkmf.rb	2020-04-05 02:18:05.986966200 -0400
++++ ruby-2.4.10.b/lib/mkmf.rb	2020-11-15 15:16:05.218234400 -0500
 @@ -1898,7 +1898,7 @@ SRC
  SHELL = /bin/sh
  
@@ -615,7 +825,7 @@ diff -Nuarp ruby-2.4.10.a/lib/mkmf.rb ruby-2.4.10.b/lib/mkmf.rb
  ECHO1 = $(V:1=@ #{CONFIG['NULLCMD']})
 diff -Nuarp ruby-2.4.10.a/lib/rdoc/ri/paths.rb ruby-2.4.10.b/lib/rdoc/ri/paths.rb
 --- ruby-2.4.10.a/lib/rdoc/ri/paths.rb	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/lib/rdoc/ri/paths.rb	2020-04-05 02:18:04.185166600 -0400
++++ ruby-2.4.10.b/lib/rdoc/ri/paths.rb	2020-11-15 15:15:29.529716500 -0500
 @@ -10,7 +10,7 @@ module RDoc::RI::Paths
    #:stopdoc:
    require 'rbconfig'
@@ -627,7 +837,7 @@ diff -Nuarp ruby-2.4.10.a/lib/rdoc/ri/paths.rb ruby-2.4.10.b/lib/rdoc/ri/paths.r
                File.join RbConfig::CONFIG['ridir'], version
 diff -Nuarp ruby-2.4.10.a/lib/resolv.rb ruby-2.4.10.b/lib/resolv.rb
 --- ruby-2.4.10.a/lib/resolv.rb	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/lib/resolv.rb	2020-04-05 02:18:07.362075900 -0400
++++ ruby-2.4.10.b/lib/resolv.rb	2020-11-15 15:16:34.758578400 -0500
 @@ -189,7 +189,7 @@ class Resolv
          unless @initialized
            @name2addr = {}
@@ -639,7 +849,7 @@ diff -Nuarp ruby-2.4.10.a/lib/resolv.rb ruby-2.4.10.b/lib/resolv.rb
                addr, hostname, *aliases = line.split(/\s+/)
 diff -Nuarp ruby-2.4.10.a/lib/rubygems/defaults.rb ruby-2.4.10.b/lib/rubygems/defaults.rb
 --- ruby-2.4.10.a/lib/rubygems/defaults.rb	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/lib/rubygems/defaults.rb	2020-04-05 02:18:04.198158200 -0400
++++ ruby-2.4.10.b/lib/rubygems/defaults.rb	2020-11-15 15:15:29.551410700 -0500
 @@ -32,20 +32,20 @@ module Gem
               [
                 File.dirname(RbConfig::CONFIG['sitedir']),
@@ -685,7 +895,7 @@ diff -Nuarp ruby-2.4.10.a/lib/rubygems/defaults.rb ruby-2.4.10.b/lib/rubygems/de
    ##
 diff -Nuarp ruby-2.4.10.a/lib/rubygems.rb ruby-2.4.10.b/lib/rubygems.rb
 --- ruby-2.4.10.a/lib/rubygems.rb	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/lib/rubygems.rb	2020-04-05 02:18:08.467301200 -0400
++++ ruby-2.4.10.b/lib/rubygems.rb	2020-11-15 15:16:57.538813200 -0500
 @@ -121,7 +121,6 @@ module Gem
  
    WIN_PATTERNS = [
@@ -696,7 +906,7 @@ diff -Nuarp ruby-2.4.10.a/lib/rubygems.rb ruby-2.4.10.b/lib/rubygems.rb
      /mswin/i,
 diff -Nuarp ruby-2.4.10.a/loadpath.c ruby-2.4.10.b/loadpath.c
 --- ruby-2.4.10.a/loadpath.c	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/loadpath.c	2020-04-05 02:18:05.617176300 -0400
++++ ruby-2.4.10.b/loadpath.c	2020-11-15 15:15:57.712308900 -0500
 @@ -65,22 +65,38 @@ const char ruby_initial_load_paths[] =
      RUBY_SEARCH_PATH "\0"
  #endif
@@ -738,7 +948,7 @@ diff -Nuarp ruby-2.4.10.a/loadpath.c ruby-2.4.10.b/loadpath.c
  #ifdef RUBY_THINARCH
 diff -Nuarp ruby-2.4.10.a/Makefile.in ruby-2.4.10.b/Makefile.in
 --- ruby-2.4.10.a/Makefile.in	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/Makefile.in	2020-04-05 02:18:06.308144200 -0400
++++ ruby-2.4.10.b/Makefile.in	2020-11-15 15:16:11.825113500 -0500
 @@ -116,6 +116,8 @@ XRUBY_RUBYLIBDIR = @XRUBY_RUBYLIBDIR@
  XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
  BOOTSTRAPRUBY = @BOOTSTRAPRUBY@
@@ -750,7 +960,7 @@ diff -Nuarp ruby-2.4.10.a/Makefile.in ruby-2.4.10.b/Makefile.in
  MAJOR=	@MAJOR@
 diff -Nuarp ruby-2.4.10.a/template/ruby.pc.in ruby-2.4.10.b/template/ruby.pc.in
 --- ruby-2.4.10.a/template/ruby.pc.in	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/template/ruby.pc.in	2020-04-05 02:18:04.179169600 -0400
++++ ruby-2.4.10.b/template/ruby.pc.in	2020-11-15 15:15:29.525146000 -0500
 @@ -9,6 +9,7 @@ MAJOR=@MAJOR@
  MINOR=@MINOR@
  TEENY=@TEENY@
@@ -761,7 +971,7 @@ diff -Nuarp ruby-2.4.10.a/template/ruby.pc.in ruby-2.4.10.b/template/ruby.pc.in
  RUBY_VERSION_NAME=@RUBY_VERSION_NAME@
 diff -Nuarp ruby-2.4.10.a/template/verconf.h.tmpl ruby-2.4.10.b/template/verconf.h.tmpl
 --- ruby-2.4.10.a/template/verconf.h.tmpl	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/template/verconf.h.tmpl	2020-04-05 02:18:05.626170100 -0400
++++ ruby-2.4.10.b/template/verconf.h.tmpl	2020-11-15 15:15:57.721935100 -0500
 @@ -36,6 +36,9 @@
  % if C["RUBY_SEARCH_PATH"]
  #define RUBY_SEARCH_PATH		"${RUBY_SEARCH_PATH}"
@@ -774,7 +984,7 @@ diff -Nuarp ruby-2.4.10.a/template/verconf.h.tmpl ruby-2.4.10.b/template/verconf
  % R["ruby_version"] = '"RUBY_LIB_VERSION"'
 diff -Nuarp ruby-2.4.10.a/test/fiddle/helper.rb ruby-2.4.10.b/test/fiddle/helper.rb
 --- ruby-2.4.10.a/test/fiddle/helper.rb	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/test/fiddle/helper.rb	2020-04-05 02:18:07.027265300 -0400
++++ ruby-2.4.10.b/test/fiddle/helper.rb	2020-11-15 15:16:28.153630700 -0500
 @@ -6,98 +6,6 @@ require 'fiddle'
  
  libc_so = libm_so = nil
@@ -876,7 +1086,7 @@ diff -Nuarp ruby-2.4.10.a/test/fiddle/helper.rb ruby-2.4.10.b/test/fiddle/helper
    ldd = `ldd #{ruby}`
 diff -Nuarp ruby-2.4.10.a/test/ruby/test_io.rb ruby-2.4.10.b/test/ruby/test_io.rb
 --- ruby-2.4.10.a/test/ruby/test_io.rb	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/test/ruby/test_io.rb	2020-04-05 02:18:07.732717500 -0400
++++ ruby-2.4.10.b/test/ruby/test_io.rb	2020-11-15 15:16:41.596481300 -0500
 @@ -3564,7 +3564,7 @@ __END__
    end
  
@@ -896,7 +1106,7 @@ diff -Nuarp ruby-2.4.10.a/test/ruby/test_io.rb ruby-2.4.10.b/test/ruby/test_io.r
    end
 diff -Nuarp ruby-2.4.10.a/test/rubygems/test_gem.rb ruby-2.4.10.b/test/rubygems/test_gem.rb
 --- ruby-2.4.10.a/test/rubygems/test_gem.rb	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/test/rubygems/test_gem.rb	2020-04-05 02:18:04.206155100 -0400
++++ ruby-2.4.10.b/test/rubygems/test_gem.rb	2020-11-15 15:15:29.564615200 -0500
 @@ -1124,7 +1124,8 @@ class TestGem < Gem::TestCase
  
    def test_self_user_dir
@@ -918,7 +1128,7 @@ diff -Nuarp ruby-2.4.10.a/test/rubygems/test_gem.rb ruby-2.4.10.b/test/rubygems/
    end
 diff -Nuarp ruby-2.4.10.a/tool/mkconfig.rb ruby-2.4.10.b/tool/mkconfig.rb
 --- ruby-2.4.10.a/tool/mkconfig.rb	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/tool/mkconfig.rb	2020-04-05 02:18:04.589936700 -0400
++++ ruby-2.4.10.b/tool/mkconfig.rb	2020-11-15 15:15:36.283856100 -0500
 @@ -113,7 +113,7 @@ File.foreach "config.status" do |line|
      val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
      case name
@@ -930,7 +1140,7 @@ diff -Nuarp ruby-2.4.10.a/tool/mkconfig.rb ruby-2.4.10.b/tool/mkconfig.rb
      when /^UNIVERSAL_ARCHNAMES$/
 diff -Nuarp ruby-2.4.10.a/tool/rbinstall.rb ruby-2.4.10.b/tool/rbinstall.rb
 --- ruby-2.4.10.a/tool/rbinstall.rb	2020-03-31 07:42:18.000000000 -0400
-+++ ruby-2.4.10.b/tool/rbinstall.rb	2020-04-05 02:18:05.633166700 -0400
++++ ruby-2.4.10.b/tool/rbinstall.rb	2020-11-15 15:15:57.733601300 -0500
 @@ -330,6 +330,7 @@ sitelibdir = CONFIG["sitelibdir"]
  sitearchlibdir = CONFIG["sitearchdir"]
  vendorlibdir = CONFIG["vendorlibdir"]

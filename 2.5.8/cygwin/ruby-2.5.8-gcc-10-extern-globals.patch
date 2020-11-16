@@ -1,0 +1,213 @@
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole.c ruby-2.5.8.b/ext/win32ole/win32ole.c
+--- ruby-2.5.8.a/ext/win32ole/win32ole.c	2020-11-15 17:40:24.098325200 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole.c	2020-11-15 17:43:19.144494000 -0500
+@@ -35,6 +35,7 @@ typedef HWND (WINAPI FNHTMLHELP)(HWND hw
+                                  UINT uCommand, DWORD dwData);
+ typedef BOOL (FNENUMSYSEMCODEPAGES) (CODEPAGE_ENUMPROC, DWORD);
+ VALUE cWIN32OLE;
++LCID cWIN32OLE_lcid;
+ 
+ #if defined(RB_THREAD_SPECIFIC) && (defined(__CYGWIN__))
+ static RB_THREAD_SPECIFIC BOOL g_ole_initialized;
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole.h ruby-2.5.8.b/ext/win32ole/win32ole.h
+--- ruby-2.5.8.a/ext/win32ole/win32ole.h	2020-11-15 17:40:24.108002400 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole.h	2020-11-15 17:43:15.823491800 -0500
+@@ -112,8 +112,8 @@ struct oledata {
+     IDispatch *pDispatch;
+ };
+ 
+-VALUE cWIN32OLE;
+-LCID cWIN32OLE_lcid;
++extern VALUE cWIN32OLE;
++extern LCID cWIN32OLE_lcid;
+ 
+ struct oledata *oledata_get_struct(VALUE obj);
+ LPWSTR ole_vstr2wc(VALUE vstr);
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_error.c ruby-2.5.8.b/ext/win32ole/win32ole_error.c
+--- ruby-2.5.8.a/ext/win32ole/win32ole_error.c	2020-11-15 17:40:24.117154200 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_error.c	2020-11-15 17:43:54.739557500 -0500
+@@ -1,5 +1,8 @@
+ #include "win32ole.h"
+ 
++VALUE eWIN32OLERuntimeError;
++VALUE eWIN32OLEQueryInterfaceError;
++
+ static VALUE ole_hresult2msg(HRESULT hr);
+ 
+ static VALUE
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_error.h ruby-2.5.8.b/ext/win32ole/win32ole_error.h
+--- ruby-2.5.8.a/ext/win32ole/win32ole_error.h	2020-11-15 17:40:24.075449700 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_error.h	2020-11-15 17:43:45.634143400 -0500
+@@ -1,8 +1,8 @@
+ #ifndef WIN32OLE_ERROR_H
+ #define WIN32OLE_ERROR_H 1
+ 
+-VALUE eWIN32OLERuntimeError;
+-VALUE eWIN32OLEQueryInterfaceError;
++extern VALUE eWIN32OLERuntimeError;
++extern VALUE eWIN32OLEQueryInterfaceError;
+ NORETURN(PRINTF_ARGS(void ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...), 3, 4));
+ void Init_win32ole_error(void);
+ 
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_method.c ruby-2.5.8.b/ext/win32ole/win32ole_method.c
+--- ruby-2.5.8.a/ext/win32ole/win32ole_method.c	2020-11-15 17:40:24.020550800 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_method.c	2020-11-15 17:44:50.146455900 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE cWIN32OLE_METHOD;
++
+ static void olemethod_free(void *ptr);
+ static size_t olemethod_size(const void *ptr);
+ static VALUE ole_method_sub(VALUE self, ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE name);
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_method.h ruby-2.5.8.b/ext/win32ole/win32ole_method.h
+--- ruby-2.5.8.a/ext/win32ole/win32ole_method.h	2020-11-15 17:40:24.030268600 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_method.h	2020-11-15 17:44:44.884755400 -0500
+@@ -7,7 +7,7 @@ struct olemethoddata {
+     UINT index;
+ };
+ 
+-VALUE cWIN32OLE_METHOD;
++extern VALUE cWIN32OLE_METHOD;
+ VALUE folemethod_s_allocate(VALUE klass);
+ VALUE ole_methods_from_typeinfo(ITypeInfo *pTypeInfo, int mask);
+ VALUE create_win32ole_method(ITypeInfo *pTypeInfo, VALUE name);
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_record.c ruby-2.5.8.b/ext/win32ole/win32ole_record.c
+--- ruby-2.5.8.a/ext/win32ole/win32ole_record.c	2020-11-15 17:40:23.846729400 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_record.c	2020-11-15 17:44:11.905637000 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE cWIN32OLE_RECORD;
++
+ struct olerecorddata {
+     IRecordInfo *pri;
+     void *pdata;
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_record.h ruby-2.5.8.b/ext/win32ole/win32ole_record.h
+--- ruby-2.5.8.a/ext/win32ole/win32ole_record.h	2020-11-15 17:40:24.012939000 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_record.h	2020-11-15 17:44:08.348368600 -0500
+@@ -1,7 +1,7 @@
+ #ifndef WIN32OLE_RECORD_H
+ #define WIN32OLE_RECORD_H 1
+ 
+-VALUE cWIN32OLE_RECORD;
++extern VALUE cWIN32OLE_RECORD;
+ void ole_rec2variant(VALUE rec, VARIANT *var);
+ void olerecord_set_ivar(VALUE obj, IRecordInfo *pri, void *prec);
+ VALUE create_win32ole_record(IRecordInfo *pri, void *prec);
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_type.c ruby-2.5.8.b/ext/win32ole/win32ole_type.c
+--- ruby-2.5.8.a/ext/win32ole/win32ole_type.c	2020-11-15 17:40:24.067322700 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_type.c	2020-11-15 17:45:29.691172600 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE cWIN32OLE_TYPE;
++
+ struct oletypedata {
+     ITypeInfo *pTypeInfo;
+ };
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_type.h ruby-2.5.8.b/ext/win32ole/win32ole_type.h
+--- ruby-2.5.8.a/ext/win32ole/win32ole_type.h	2020-11-15 17:40:24.058715700 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_type.h	2020-11-15 17:45:25.785354600 -0500
+@@ -1,6 +1,8 @@
+ #ifndef WIN32OLE_TYPE_H
+ #define WIN32OLE_TYPE_H 1
+-VALUE cWIN32OLE_TYPE;
++
++extern VALUE cWIN32OLE_TYPE;
++
+ VALUE create_win32ole_type(ITypeInfo *pTypeInfo, VALUE name);
+ ITypeInfo *itypeinfo(VALUE self);
+ VALUE ole_type_from_itypeinfo(ITypeInfo *pTypeInfo);
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_typelib.c ruby-2.5.8.b/ext/win32ole/win32ole_typelib.c
+--- ruby-2.5.8.a/ext/win32ole/win32ole_typelib.c	2020-11-15 17:40:23.974882100 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_typelib.c	2020-11-15 17:45:44.460398200 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE cWIN32OLE_TYPELIB;
++
+ struct oletypelibdata {
+     ITypeLib *pTypeLib;
+ };
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_typelib.h ruby-2.5.8.b/ext/win32ole/win32ole_typelib.h
+--- ruby-2.5.8.a/ext/win32ole/win32ole_typelib.h	2020-11-15 17:40:23.747809400 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_typelib.h	2020-11-15 17:45:40.431414300 -0500
+@@ -1,7 +1,7 @@
+ #ifndef WIN32OLE_TYPELIB_H
+ #define WIN32OLE_TYPELIB_H 1
+ 
+-VALUE cWIN32OLE_TYPELIB;
++extern VALUE cWIN32OLE_TYPELIB;
+ 
+ void Init_win32ole_typelib(void);
+ ITypeLib * itypelib(VALUE self);
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_variable.c ruby-2.5.8.b/ext/win32ole/win32ole_variable.c
+--- ruby-2.5.8.a/ext/win32ole/win32ole_variable.c	2020-11-15 17:40:23.877766700 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_variable.c	2020-11-15 17:45:08.883463800 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE cWIN32OLE_VARIABLE;
++
+ struct olevariabledata {
+     ITypeInfo *pTypeInfo;
+     UINT index;
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_variable.h ruby-2.5.8.b/ext/win32ole/win32ole_variable.h
+--- ruby-2.5.8.a/ext/win32ole/win32ole_variable.h	2020-11-15 17:40:23.984016200 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_variable.h	2020-11-15 17:45:04.204201200 -0500
+@@ -1,7 +1,7 @@
+ #ifndef WIN32OLE_VARIABLE_H
+ #define WIN32OLE_VARIABLE_H 1
+ 
+-VALUE cWIN32OLE_VARIABLE;
++extern VALUE cWIN32OLE_VARIABLE;
+ VALUE create_win32ole_variable(ITypeInfo *pTypeInfo, UINT index, VALUE name);
+ void Init_win32ole_variable(void);
+ 
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_variant.c ruby-2.5.8.b/ext/win32ole/win32ole_variant.c
+--- ruby-2.5.8.a/ext/win32ole/win32ole_variant.c	2020-11-15 17:40:23.993658700 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_variant.c	2020-11-15 17:44:27.476260500 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE cWIN32OLE_VARIANT;
++
+ struct olevariantdata {
+     VARIANT realvar;
+     VARIANT var;
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_variant.h ruby-2.5.8.b/ext/win32ole/win32ole_variant.h
+--- ruby-2.5.8.a/ext/win32ole/win32ole_variant.h	2020-11-15 17:40:24.038923800 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_variant.h	2020-11-15 17:44:23.123334600 -0500
+@@ -1,7 +1,7 @@
+ #ifndef WIN32OLE_VARIANT_H
+ #define WIN32OLE_VARIANT_H 1
+ 
+-VALUE cWIN32OLE_VARIANT;
++extern VALUE cWIN32OLE_VARIANT;
+ void ole_variant2variant(VALUE val, VARIANT *var);
+ void Init_win32ole_variant(void);
+ 
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_variant_m.c ruby-2.5.8.b/ext/win32ole/win32ole_variant_m.c
+--- ruby-2.5.8.a/ext/win32ole/win32ole_variant_m.c	2020-11-15 17:40:23.856386000 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_variant_m.c	2020-11-15 17:45:58.549730300 -0500
+@@ -1,5 +1,7 @@
+ #include "win32ole.h"
+ 
++VALUE mWIN32OLE_VARIANT;
++
+ void Init_win32ole_variant_m(void)
+ {
+     /*
+diff -Nuarp ruby-2.5.8.a/ext/win32ole/win32ole_variant_m.h ruby-2.5.8.b/ext/win32ole/win32ole_variant_m.h
+--- ruby-2.5.8.a/ext/win32ole/win32ole_variant_m.h	2020-11-15 17:40:23.864533800 -0500
++++ ruby-2.5.8.b/ext/win32ole/win32ole_variant_m.h	2020-11-15 17:45:54.548330600 -0500
+@@ -1,7 +1,7 @@
+ #ifndef WIN32OLE_VARIANT_M_H
+ #define WIN32OLE_VARIANT_M_H 1
+ 
+-VALUE mWIN32OLE_VARIANT;
++extern VALUE mWIN32OLE_VARIANT;
+ void Init_win32ole_variant_m(void);
+ 
+ #endif

@@ -1,6 +1,13 @@
 Cygwin Ruby / ruby-install / chruby notes
 
-need to fork chrub/ruby-install/gem_home. ruby-install needs update for newer autotools (configure.ac)
+bison is needed for ripper (a Ruby stdlib extension):
+ripper:
+        Could not be configured. It will not be installed.
+        /home/allen/src/ruby-2.5.8/ext/ripper/extconf.rb:10: missing bison; abort
+        Check ext/ripper/mkmf.log for more details.
+*** Fix the problems, then remove these directories and try again if you want.
+
+need to fork chruby/ruby-install/gem_home. ruby-install needs update for newer autotools (configure.ac)
 
 Cygwin can't build a static linked ruby.exe b/c not all of Ruby deps have (or are
 being built with static versions).
@@ -29,6 +36,7 @@ patch -p1 -d ./ruby-2.5.8.b < ./fedora/ruby-2.6.0-library-options-to-MAINLIBS.pa
 patch -p1 -d ./ruby-2.5.8.b < ./fedora/ruby-2.5.1-Avoid-need-of-C++-compiler-to-pass-the-test-suite.patch;
 patch -p1 -d ./ruby-2.5.8.b < ./cygwin/ruby-2.5.7-cygwin-configure.patch;
 patch -p1 -d ./ruby-2.5.8.b < ./cygwin/ruby-2.5.7-win32-resolv.patch;
+patch -p1 -d ./ruby-2.5.8.b < ./cygwin/ruby-2.5.8-gcc-10-extern-globals.patch;
 patch -p1 -d ./ruby-2.5.8.b < ./railsexpress/02-improve-gc-stats.patch;
 patch -p1 -d ./ruby-2.5.8.b < ./railsexpress/03-more-detailed-stacktrace.patch;
 diff -Nuarp ruby-2.5.8.a ruby-2.5.8.b > ruby-2.5.8-fedora-cygwin-railsexpress-patches.patch;
@@ -41,7 +49,6 @@ don't need b/c we aren't cross building
 don't need b/c ruby-install sets this
   --prefix=/opt/rubies/ruby-2.5.8 \
 
-env ruby_version=2.5.8 \
 ruby-install \
   --patch ruby-2.5.8-fedora-cygwin-railsexpress-patches.patch \
   --cleanup \
@@ -71,7 +78,6 @@ ruby-install \
   --with-compress-debug-sections=no \
   --disable-rpath \
   --enable-shared \
-  '--with-ruby-version=' \
   --disable-multiarch \
   --enable-debug-env \
   CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -m64 -mtune=generic -fasynchronous-unwind-tables -fcf-protection" \

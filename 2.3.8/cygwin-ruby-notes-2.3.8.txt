@@ -14,10 +14,10 @@ Built with OpenSSL 1.0
 
 Ruby 2.3.8
 1. Generate single patch file:
-wget https://cache.ruby-lang.org/pub/ruby/2.3/ruby-2.3.8.tar.gz
-tar -zxvf ruby-2.3.8.tar.gz
-cp -r ruby-2.3.8 ruby-2.3.8.b
-mv ruby-2.3.8 ruby-2.3.8.a
+wget https://cache.ruby-lang.org/pub/ruby/2.3/ruby-2.3.8.tar.gz;
+tar -zxvf ruby-2.3.8.tar.gz;
+cp -r ruby-2.3.8 ruby-2.3.8.b;
+mv ruby-2.3.8 ruby-2.3.8.a;
 patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-2.3.0-ruby_version-rebase.patch;
 patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-2.1.0-Prevent-duplicated-paths-when-empty-version-string-i-rebase.patch;
 patch -p1 -d ./ruby-2.3.8.b < ./fedora/ruby-2.1.0-Enable-configuration-of-archlibdir-rebase.patch;
@@ -33,6 +33,7 @@ patch -p1 -d ./ruby-2.3.8.b < ./cygwin/1.8.7-cygwin-tcltk-rebase.patch;
 patch -p1 -d ./ruby-2.3.8.b < ./cygwin/2.0.0-cygwin-configure-rebase.patch;
 patch -p1 -d ./ruby-2.3.8.b < ./cygwin/2.0.0-cygwin-rubygems-rebase.patch;
 patch -p1 -d ./ruby-2.3.8.b < ./cygwin/2.2.5-cygwin-dlload-rebase.patch;
+patch -p1 -d ./ruby-2.3.8.b < ./cygwin/ruby-2.3.8-gcc-10-extern-globals.patch;
 patch -p1 -d ./ruby-2.3.8.b < ./railsexpress/02-improve-gc-stats.patch;
 patch -p1 -d ./ruby-2.3.8.b < ./railsexpress/03-display-more-detailed-stack-trace.patch;
 diff -Nuarp ruby-2.3.8.a ruby-2.3.8.b > ruby-2.3.8-fedora-cygwin-railsexpress-patches.patch;
@@ -45,7 +46,6 @@ don't need b/c we aren't cross building
 don't need b/c ruby-install sets this
   --prefix=/opt/rubies/ruby-2.3.8 \
 
-env ruby_version=2.3.8 \
 ruby-install \
   --patch ruby-2.3.8-fedora-cygwin-railsexpress-patches.patch \
   --cleanup \
@@ -74,7 +74,6 @@ ruby-install \
   --with-ruby-pc=ruby.pc \
   --disable-rpath \
   --enable-shared \
-  '--with-ruby-version=' \
   --disable-multiarch \
   --enable-debug-env \
   --with-openssl-dir=/usr/lib/openssl-1.0 \

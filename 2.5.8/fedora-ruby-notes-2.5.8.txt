@@ -36,7 +36,6 @@ don't need b/c we aren't cross building
 don't need b/c ruby-install sets this
   --prefix=/opt/rubies/ruby-2.5.8 \
 
-env ruby_version=2.5.8 \
 sudo ruby-install \
   --patch ruby-2.5.8-fedora-railsexpress-patches.patch \
   --cleanup \
@@ -67,7 +66,6 @@ sudo ruby-install \
   --disable-rpath \
   --disable-shared \
   --enable-static \
-  '--with-ruby-version=' \
   --disable-multiarch \
   --enable-debug-env \
   CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection" \
