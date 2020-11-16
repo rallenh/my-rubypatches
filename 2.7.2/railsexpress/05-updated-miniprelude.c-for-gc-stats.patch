@@ -1,0 +1,179 @@
+diff -Nuarp ruby-2.7.2.a/miniprelude.c ruby-2.7.2.b/miniprelude.c
+--- ruby-2.7.2.a/miniprelude.c	2020-10-21 19:02:21.764058900 -0400
++++ ruby-2.7.2.b/miniprelude.c	2020-10-21 19:03:42.365140100 -0400
+@@ -167,8 +167,9 @@ static const struct {
+ static const char prelude_name1[] = "<internal:gc>";
+ static const struct {
+     char L0[506]; /* 1..71 */
+-    char L71[463]; /* 72..163 */
+-    char L163[204]; /* 164..170 */
++    char L71[508]; /* 72..172 */
++    char L172[503]; /* 173..244 */
++    char L244[235]; /* 245..256 */
+ } prelude_code1 = {
+ #line 1 "gc.rb"
+ "\n"/* for gc.c */
+@@ -333,18 +334,106 @@ static const struct {
+ "  def self.compact\n"
+ "    __builtin_rb_gc_compact\n"
+ "  end\n"
++"\n"
++"\n"/* call-seq: */
++"\n"/*    GC.enable_stats\011  => true or false */
++"\n"/*  */
++"\n"/* Enables garbage collection statistics, returning <code>true</code> if garbage */
++"\n"/* collection statistics was already enabled. */
++"\n"/*  */
++"\n"/*    GC.enable_stats\011 #=> false or true */
++"\n"/*    GC.enable_stats\011 #=> true */
++"  def self.enable_stats\n"
++"    __builtin_gc_enable_stats\n"
++"  end\n"
++,
++#line 173 "gc.rb"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*    GC.disable_stats\011   => true or false */
++"\n"/*  */
++"\n"/* Disables garbage collection statistics, returning <code>true</code> if garbage */
++"\n"/* collection statistics was already disabled. */
++"\n"/*  */
++"\n"/*    GC.disable_stats\011  #=> false or true */
++"\n"/*    GC.disable_stats\011  #=> true */
++"  def self.disable_stats\n"
++"    __builtin_gc_disable_stats\n"
++"  end\n"
++"\n"
++"\n"/* call-seq: */
++"\n"/*    GC.stats_enabled?    => true or false */
++"\n"/*  */
++"\n"/* Check whether GC stats have been enabled. */
++"\n"/*  */
++"\n"/*    GC.stats_enabled?   #=> false or true */
++"  def self.stats_enabled?\n"
++"    __builtin_gc_stats_enabled\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*    GC.time\011  => Integer */
++"\n"/*  */
++"\n"/* Returns the time spent during garbage collection while GC statistics collection */
++"\n"/* was enabled (in micro seconds). */
++"\n"/*  */
++"\n"/*    GC.time\011  #=> 20000 */
++"  def self.time\n"
++"    __builtin_gc_time\n"
++"  end\n"
++"\n"
++"\n"/*  call-seq: */
++"\n"/* GC.heap_slots\011=> Integer */
++"\n"/*  */
++"\n"/*  Returns the number of heap slots available for object allocations. */
++"\n"/*  */
++"\n"/* GC.heap_slots\011#=> 10000 */
++"  def self.heap_slots\n"
++"    __builtin_gc_heap_slots\n"
++"  end\n"
++"\n"
++"\n"/* call-seq: */
++"\n"/*    GC.heap_slots_live_after_last_gc\011   => Integer */
++"\n"/*  */
++"\n"/* Returns the number of heap slots which were live after the last garbage collection. */
++"\n"/*  */
++"\n"/*    GC.heap_slots_live_after_last_gc\011   #=> 231223 */
++"  def self.heap_slots_live_after_last_gc\n"
++"    __builtin_gc_heap_slots_live_after_last_gc\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*  GC.total_mallocs\011   => Integer */
++"\n"/*  */
++"\n"/*   Returns the number malloc calls. Might wrap around. */
++"\n"/*  */
++"\n"/*  GC.total_mallocs\011   #=> 324234323246 */
++"  def self.total_mallocs\n"
++"    __builtin_gc_total_mallocs\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*  GC.total_malloced_bytes\011   => Integer */
++"\n"/*  */
++"\n"/*   Returns the number of bytes allocated. Might wrap around. */
++"\n"/*  */
++"\n"/*  GC.total_malloced_bytes\011   #=> 354656256432446 */
++"  def self.total_malloced_bytes\n"
++"    __builtin_gc_total_malloced_bytes\n"
++,
++#line 245 "gc.rb"
++"  end\n"
++"\n"
+ "end\n"
+ "\n"
+ "module ObjectSpace\n"
+-,
+-#line 164 "gc.rb"
+ "  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true\n"
+ "    __builtin_gc_start_internal full_mark, immediate_mark, immediate_sweep\n"
+ "  end\n"
+ "\n"
+ "  module_function :garbage_collect\n"
+ "end\n"
+-#line 348 "miniprelude.c"
++#line 437 "miniprelude.c"
+ };
+ 
+ static const char prelude_name2[] = "<internal:io>";
+@@ -475,7 +564,7 @@ static const struct {
+ "    __builtin_io_write_nonblock(buf, exception)\n"
+ "  end\n"
+ "end\n"
+-#line 479 "miniprelude.c"
++#line 568 "miniprelude.c"
+ };
+ 
+ static const char prelude_name3[] = "<internal:pack>";
+@@ -766,7 +855,7 @@ static const struct {
+ "    __builtin_pack_unpack1(fmt)\n"
+ "  end\n"
+ "end\n"
+-#line 770 "miniprelude.c"
++#line 859 "miniprelude.c"
+ };
+ 
+ static const char prelude_name4[] = "<internal:trace_point>";
+@@ -1131,7 +1220,7 @@ static const struct {
+ "    __builtin_tracepoint_attr_instruction_sequence\n"
+ "  end\n"
+ "end\n"
+-#line 1135 "miniprelude.c"
++#line 1224 "miniprelude.c"
+ };
+ 
+ static const char prelude_name5[] = "<internal:warning>";
+@@ -1184,7 +1273,7 @@ static const struct {
+ "    __builtin_rb_warn_m(msgs, uplevel)\n"
+ "  end\n"
+ "end\n"
+-#line 1188 "miniprelude.c"
++#line 1277 "miniprelude.c"
+ };
+ 
+ static const char prelude_name6[] = "<internal:prelude>";
+@@ -1229,7 +1318,7 @@ static const struct {
+ "\n"
+ "  private :pp\n"
+ "end\n"
+-#line 1233 "miniprelude.c"
++#line 1322 "miniprelude.c"
+ };
+ 
+ static const char prelude_name7[] = "<internal:gem_prelude>";
+@@ -1239,7 +1328,7 @@ static const struct {
+ #line 1 "gem_prelude.rb"
+ "require 'rubygems.rb' if defined?(Gem)\n"
+ "require 'did_you_mean' if defined?(DidYouMean)\n"
+-#line 1243 "miniprelude.c"
++#line 1332 "miniprelude.c"
+ };
+ 
+ #define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
