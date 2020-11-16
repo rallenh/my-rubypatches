@@ -1,0 +1,3 @@
+in Fedora and because of the install method (e.g. /opt/rubies) and permissions, here's how to get "system" gems installed or updated:
+
+$ sudo sh -c  ". /etc/profile.d/chruby.sh; chruby ruby-2.3.8; gem update --system;"
