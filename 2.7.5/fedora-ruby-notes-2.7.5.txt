@@ -1,0 +1,97 @@
+Fedora Ruby / ruby-install / chruby notes
+
+need to fork chrub/ruby-install/gem_home. ruby-install needs update for newer autotools (configure.ac)
+
+Make sure there's no /usr/bin/ruby in the path.
+
+Most of this is modeled with/after what Fedora is doing, including their
+./configure and CFLAGS/CXXFLAGS/LDFLAGS.
+
+If there is no "base ruby", build will fail due to Railsexpress patches.
+railsexpress/05-updated-miniprelude-for-gc-stats.patch is a diff of a regenerated miniprelude.c file.
+ruby ./tool/generic_erb.rb -I. -o miniprelude.c \
+     ./template/prelude.c.tmpl \
+     ./ast.rb \
+     ./gc.rb \
+     ./io.rb \
+     ./pack.rb \
+     ./trace_point.rb \
+     ./warning.rb \
+     ./prelude.rb \
+     ./gem_prelude.rb
+
+railsexpress/06-updated-gc.rbinc-for-gc-stats.patch is a diff of a regenerated gc.rbinc file.
+ruby ./tool/mk_builtin_loader.rb gc.rb
+
+# Ruby 2.7.5
+1. Generate single patch file:
+wget https://cache.ruby-lang.org/pub/ruby/2.7/ruby-2.7.5.tar.gz;
+tar -zxvf ruby-2.7.5.tar.gz;
+cp -r ruby-2.7.5 ruby-2.7.5.b;
+mv ruby-2.7.5 ruby-2.7.5.a;
+patch -p1 -d ./ruby-2.7.5.b < ./fedora/ruby-2.3.0-ruby_version.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./fedora/ruby-2.1.0-Prevent-duplicated-paths-when-empty-version-string-i.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./fedora/ruby-2.1.0-Enable-configuration-of-archlibdir.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./fedora/ruby-2.1.0-always-use-i386.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./fedora/ruby-2.1.0-custom-rubygems-location.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./fedora/ruby-1.9.3-mkmf-verbose.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./fedora/ruby-2.7.0-Initialize-ABRT-hook.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./fedora/ruby-2.3.1-Rely-on-ldd-to-detect-glibc.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./fedora/ruby-2.7.0-Remove-RubyGems-dependency.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./fedora/ruby-2.8.0-remove-unneeded-gem-require-for-ipaddr.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./fedora/ruby-dwarf5-avoid_crash-r1.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./fedora/ruby-2.7.1-Timeout-the-test_bug_reporter_add-witout-raising-err.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./railsexpress/01-fix-with-openssl-dir-option.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./railsexpress/02-fix-broken-tests-caused-by-ad.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./railsexpress/03-improve-gc-stats.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./railsexpress/04-more-detailed-stacktrace.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./railsexpress/05-malloc-trim.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./railsexpress/06-updated-miniprelude.c-for-gc-stats.patch;
+patch -p1 -d ./ruby-2.7.5.b < ./railsexpress/07-updated-gc.rbinc-for-gc-stats.patch;
+diff -Nuarp ruby-2.7.5.a ruby-2.7.5.b > ruby-2.7.5-fedora-railsexpress-patches.patch;
+rm -rf ruby-2.7.5.a ruby-2.7.5.b;
+rm -rf ruby-2.7.5.tar.gz;
+
+3. run ruby-install with single patch file:
+don't need b/c we aren't cross building
+  --target=x86_64-redhat-linux-gnu \
+don't need b/c ruby-install sets this
+  --prefix=/opt/rubies/ruby-2.7.5 \
+
+sudo \
+ruby-install \
+  --patch ruby-2.7.5-fedora-railsexpress-patches.patch \
+  --cleanup \
+  --install-dir /opt/rubies/ruby-2.7.5 \
+  ruby 2.7.5 -- \
+  --build=x86_64-redhat-linux-gnu \
+  --host=x86_64-redhat-linux-gnu \
+  --exec-prefix=/opt/rubies/ruby-2.7.5 \
+  --libdir=/opt/rubies/ruby-2.7.5/lib \
+  --localstatedir=/opt/rubies/ruby-2.7.5/var \
+  --datarootdir=/opt/rubies/ruby-2.7.5/share \
+  --with-rubylibprefix=/opt/rubies/ruby-2.7.5/lib/ruby \
+  --with-archlibdir=/opt/rubies/ruby-2.7.5/lib \
+  '--with-rubyarchprefix=$(rubylibprefix)/$(arch)' \
+  '--with-sitedir=$(rubylibprefix)/site_ruby' \
+  '--with-sitearchdir=$(sitelibdir)/$(sitearch)' \
+  '--with-vendordir=$(rubylibprefix)/vendor_ruby' \
+  '--with-vendorarchdir=$(vendorlibdir)/$(sitearch)' \
+  --with-rubyhdrdir=/opt/rubies/ruby-2.7.5/include/ruby \
+  --with-rubyarchhdrdir=/opt/rubies/ruby-2.7.5/include/ruby \
+  '--with-sitearchhdrdir=$(sitehdrdir)/$(arch)' \
+  '--with-vendorarchhdrdir=$(vendorhdrdir)/$(arch)' \
+  '--with-sitehdrdir=$(rubyhdrdir)/site_ruby' \
+  '--with-vendorhdrdir=$(rubyhdrdir)/vendor_ruby' \
+  --with-rubygemsdir=/opt/rubies/ruby-2.7.5/lib \
+  --with-ruby-pc=ruby.pc \
+  --with-compress-debug-sections=no \
+  --disable-rpath \
+  --disable-shared \
+  --enable-static \
+  --disable-multiarch \
+  --enable-debug-env \
+  CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection" \
+  CXXFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 -m64 -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection" \
+  EXTLDFLAGS="-Wl,-z,relro -Wl,--as-needed  -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld"
+
