@@ -14,6 +14,33 @@ Ruby 2.3.8
 sudo rpm -e --nodeps openssl-devel.i686 openssl-devel.x86_64
 sudo dnf install compat-openssl10-devel
 
+  in Fedora 33+, compat-openssl10 has been left for dead. openssl1.1
+  has been substituted. to make this work for FC33+, the RPMs can be found
+  on the koji cooker: https://koji.fedoraproject.org/koji/buildinfo?buildID=1574056
+
+  # remove the current version(s):
+  $ sudo rpm -e --nodeps openssl-devel.i686 openssl-devel.x86_64
+
+  # install just the x86_64 OpenSSL 1.0 -devel:
+  $ sudo rpm -Uvh https://kojipkgs.fedoraproject.org//packages/compat-openssl10/1.0.2o/11.fc33/x86_64/compat-openssl10-devel-1.0.2o-11.fc33.x86_64.rpm
+
+  # build Ruby 2.3.8
+  $ ruby-install {...}
+
+  # remove the OpenSSL 1.0 -devel:
+  $ sudo rpm -e --nodeps compat-openssl10-devel
+
+  # re-install the current OpenSSL -devel:
+  $ sudo dnf install openssl-devel.i686 openssl-devel.x86_64
+
+  caveats:
+    a. mixing really old Ruby (and it's C-based bits) with new C-based bits
+    might be problematic.
+
+    b. any RubyGem installed that requires OpenSSL 1.0 (or the generation
+    used with the ruby install) would need to have the OpenSSL -devel
+    packages swapped.
+
 2. Generate single patch file:
 wget https://cache.ruby-lang.org/pub/ruby/2.3/ruby-2.3.8.tar.gz
 tar -zxvf ruby-2.3.8.tar.gz
