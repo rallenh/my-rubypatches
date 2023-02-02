@@ -2,4 +2,3 @@ in Fedora and because of the install method (e.g. /opt/rubies) and permissions, 
 
 $ sudo sh -c  ". /etc/profile.d/chruby.sh; chruby ruby-2.3.8; gem update --system;"
 
-test
