@@ -1,0 +1,32 @@
+--- ruby-2.7.6.a/gc.rbinc	2022-04-12 07:25:50.000000000 -0400
++++ ruby-2.7.6.b/gc.rbinc	2022-05-10 00:34:13.752216100 -0400
+@@ -17,6 +17,14 @@ static void load_gc(void)
+     RB_BUILTIN_FUNCTION(6, gc_stat, gc_stat, 1),
+     RB_BUILTIN_FUNCTION(7, gc_latest_gc_info, gc_latest_gc_info, 1),
+     RB_BUILTIN_FUNCTION(8, rb_gc_compact, rb_gc_compact, 0),
++    RB_BUILTIN_FUNCTION(9, gc_enable_stats, gc_enable_stats, 0),
++    RB_BUILTIN_FUNCTION(10, gc_disable_stats, gc_disable_stats, 0),
++    RB_BUILTIN_FUNCTION(11, gc_stats_enabled, gc_stats_enabled, 0),
++    RB_BUILTIN_FUNCTION(12, gc_time, gc_time, 0),
++    RB_BUILTIN_FUNCTION(13, gc_heap_slots, gc_heap_slots, 0),
++    RB_BUILTIN_FUNCTION(14, gc_heap_slots_live_after_last_gc, gc_heap_slots_live_after_last_gc, 0),
++    RB_BUILTIN_FUNCTION(15, gc_total_mallocs, gc_total_mallocs, 0),
++    RB_BUILTIN_FUNCTION(16, gc_total_malloced_bytes, gc_total_malloced_bytes, 0),
+     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+   };
+ 
+@@ -34,6 +42,14 @@ COMPILER_WARNING_ERROR(-Wincompatible-po
+   if (0) rb_builtin_function_check_arity1(gc_stat);
+   if (0) rb_builtin_function_check_arity1(gc_latest_gc_info);
+   if (0) rb_builtin_function_check_arity0(rb_gc_compact);
++  if (0) rb_builtin_function_check_arity0(gc_enable_stats);
++  if (0) rb_builtin_function_check_arity0(gc_disable_stats);
++  if (0) rb_builtin_function_check_arity0(gc_stats_enabled);
++  if (0) rb_builtin_function_check_arity0(gc_time);
++  if (0) rb_builtin_function_check_arity0(gc_heap_slots);
++  if (0) rb_builtin_function_check_arity0(gc_heap_slots_live_after_last_gc);
++  if (0) rb_builtin_function_check_arity0(gc_total_mallocs);
++  if (0) rb_builtin_function_check_arity0(gc_total_malloced_bytes);
+ COMPILER_WARNING_POP
+ 
+   // load
