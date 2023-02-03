@@ -1,0 +1,214 @@
+--- ruby-3.0.5.a/miniprelude.c	2022-11-24 06:04:58.000000000 -0500
++++ ruby-3.0.5.b/miniprelude.c	2023-02-02 22:56:32.080818560 -0500
+@@ -322,8 +322,9 @@ static const char prelude_name2[] = "<in
+ static const struct {
+     char L0[489]; /* 1..58 */
+     char L58[486]; /* 59..182 */
+-    char L182[430]; /* 183..235 */
+-    char L235[211]; /* 236..242 */
++    char L182[484]; /* 183..253 */
++    char L253[506]; /* 254..320 */
++    char L320[230]; /* 321..328 */
+ } prelude_code2 = {
+ #line 1 "gc.rb"
+ "\n"/* for gc.c */
+@@ -562,18 +563,106 @@ static const struct {
+ "  def self.verify_compaction_references(toward: nil, double_heap: false)\n"
+ "    Primitive.gc_verify_compaction_references(double_heap, toward == :empty)\n"
+ "  end\n"
++"\n"
++"\n"/* call-seq: */
++"\n"/*    GC.enable_stats	  => true or false */
++"\n"/*  */
++"\n"/* Enables garbage collection statistics, returning <code>true</code> if garbage */
++"\n"/* collection statistics was already enabled. */
++"\n"/*  */
++"\n"/*    GC.enable_stats	 #=> false or true */
++"\n"/*    GC.enable_stats	 #=> true */
++"  def self.enable_stats\n"
++"    __builtin_gc_enable_stats\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*    GC.disable_stats	   => true or false */
++"\n"/*  */
++"\n"/* Disables garbage collection statistics, returning <code>true</code> if garbage */
++"\n"/* collection statistics was already disabled. */
++"\n"/*  */
++"\n"/*    GC.disable_stats	  #=> false or true */
++"\n"/*    GC.disable_stats	  #=> true */
++,
++#line 254 "gc.rb"
++"  def self.disable_stats\n"
++"    __builtin_gc_disable_stats\n"
++"  end\n"
++"\n"
++"\n"/* call-seq: */
++"\n"/*    GC.stats_enabled?    => true or false */
++"\n"/*  */
++"\n"/* Check whether GC stats have been enabled. */
++"\n"/*  */
++"\n"/*    GC.stats_enabled?   #=> false or true */
++"  def self.stats_enabled?\n"
++"    __builtin_gc_stats_enabled\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*    GC.time	  => Integer */
++"\n"/*  */
++"\n"/* Returns the time spent during garbage collection while GC statistics collection */
++"\n"/* was enabled (in micro seconds). */
++"\n"/*  */
++"\n"/*    GC.time	  #=> 20000 */
++"  def self.time\n"
++"    __builtin_gc_time\n"
++"  end\n"
++"\n"
++"\n"/*  call-seq: */
++"\n"/* GC.heap_slots	=> Integer */
++"\n"/*  */
++"\n"/*  Returns the number of heap slots available for object allocations. */
++"\n"/*  */
++"\n"/* GC.heap_slots	#=> 10000 */
++"  def self.heap_slots\n"
++"    __builtin_gc_heap_slots\n"
++"  end\n"
++"\n"
++"\n"/* call-seq: */
++"\n"/*    GC.heap_slots_live_after_last_gc	   => Integer */
++"\n"/*  */
++"\n"/* Returns the number of heap slots which were live after the last garbage collection. */
++"\n"/*  */
++"\n"/*    GC.heap_slots_live_after_last_gc	   #=> 231223 */
++"  def self.heap_slots_live_after_last_gc\n"
++"    __builtin_gc_heap_slots_live_after_last_gc\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*  GC.total_mallocs	   => Integer */
++"\n"/*  */
++"\n"/*   Returns the number malloc calls. Might wrap around. */
++"\n"/*  */
++"\n"/*  GC.total_mallocs	   #=> 324234323246 */
++"  def self.total_mallocs\n"
++"    __builtin_gc_total_mallocs\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*  GC.total_malloced_bytes	   => Integer */
++"\n"/*  */
++"\n"/*   Returns the number of bytes allocated. Might wrap around. */
++"\n"/*  */
++"\n"/*  GC.total_malloced_bytes	   #=> 354656256432446 */
++"  def self.total_malloced_bytes\n"
++"    __builtin_gc_total_malloced_bytes\n"
++"  end\n"
++"\n"
+ "end\n"
+ "\n"
+-"module ObjectSpace\n"
+ ,
+-#line 236 "gc.rb"
++#line 321 "gc.rb"
++"module ObjectSpace\n"
+ "  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true\n"
+ "    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false\n"
+ "  end\n"
+ "\n"
+ "  module_function :garbage_collect\n"
+ "end\n"
+-#line 577 "miniprelude.c"
++#line 666 "miniprelude.c"
+ };
+ 
+ static const char prelude_name3[] = "<internal:integer>";
+@@ -734,7 +823,7 @@ static const struct {
+ "    Primitive.cexpr! 'rb_int_zero_p(self)'\n"
+ "  end\n"
+ "end\n"
+-#line 738 "miniprelude.c"
++#line 827 "miniprelude.c"
+ };
+ 
+ static const char prelude_name4[] = "<internal:io>";
+@@ -865,7 +954,7 @@ static const struct {
+ "    Primitive.io_write_nonblock(buf, exception)\n"
+ "  end\n"
+ "end\n"
+-#line 869 "miniprelude.c"
++#line 958 "miniprelude.c"
+ };
+ 
+ static const char prelude_name5[] = "<internal:pack>";
+@@ -1156,7 +1245,7 @@ static const struct {
+ "    Primitive.pack_unpack1(fmt)\n"
+ "  end\n"
+ "end\n"
+-#line 1160 "miniprelude.c"
++#line 1249 "miniprelude.c"
+ };
+ 
+ static const char prelude_name6[] = "<internal:trace_point>";
+@@ -1521,7 +1610,7 @@ static const struct {
+ "    Primitive.tracepoint_attr_instruction_sequence\n"
+ "  end\n"
+ "end\n"
+-#line 1525 "miniprelude.c"
++#line 1614 "miniprelude.c"
+ };
+ 
+ static const char prelude_name7[] = "<internal:warning>";
+@@ -1582,7 +1671,7 @@ static const struct {
+ "    Primitive.rb_warn_m(msgs, uplevel, category)\n"
+ "  end\n"
+ "end\n"
+-#line 1586 "miniprelude.c"
++#line 1675 "miniprelude.c"
+ };
+ 
+ static const char prelude_name8[] = "<internal:array>";
+@@ -1651,7 +1740,7 @@ static const struct {
+ "    Primitive.rb_ary_sample(random, n, ary)\n"
+ "  end\n"
+ "end\n"
+-#line 1655 "miniprelude.c"
++#line 1744 "miniprelude.c"
+ };
+ 
+ static const char prelude_name9[] = "<internal:kernel>";
+@@ -1836,7 +1925,7 @@ static const struct {
+ "    Primitive.rb_f_float(arg, exception)\n"
+ "  end\n"
+ "end\n"
+-#line 1840 "miniprelude.c"
++#line 1929 "miniprelude.c"
+ };
+ 
+ static const char prelude_name10[] = "<internal:ractor>";
+@@ -2703,7 +2792,7 @@ static const struct {
+ "    }\n"
+ "  end\n"
+ "end\n"
+-#line 2707 "miniprelude.c"
++#line 2796 "miniprelude.c"
+ };
+ 
+ static const char prelude_name11[] = "<internal:prelude>";
+@@ -2733,7 +2822,7 @@ static const struct {
+ "\n"
+ "  private :pp\n"
+ "end\n"
+-#line 2737 "miniprelude.c"
++#line 2826 "miniprelude.c"
+ };
+ 
+ static const char prelude_name12[] = "<internal:gem_prelude>";
+@@ -2752,7 +2841,7 @@ static const struct {
+ "rescue LoadError\n"
+ "  warn \"`did_you_mean' was not loaded.\"\n"
+ "end if defined?(DidYouMean)\n"
+-#line 2756 "miniprelude.c"
++#line 2845 "miniprelude.c"
+ };
+ 
+ COMPILER_WARNING_POP
