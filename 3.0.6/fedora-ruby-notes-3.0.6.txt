@@ -35,7 +35,7 @@ Most of this is modeled with/after what Fedora is doing, including their
 If there is no "BASERUBY", build will fail due to Railsexpress patches.
 railsexpress/03-updated-miniprelude-for-gc-stats.patch is a diff of a regenerated miniprelude.c file.
 
-in ruby-3.0.5.b:
+in ruby-3.0.6.b:
 ruby ./tool/generic_erb.rb -I. -o miniprelude.c \
      ./template/prelude.c.tmpl \
      ./ast.rb \
@@ -53,77 +53,77 @@ ruby ./tool/generic_erb.rb -I. -o miniprelude.c \
      ./gem_prelude.rb
 
 generate the diff:
-diff -Nuarp ruby-3.0.5.a//miniprelude.c ruby-3.0.5.b/miniprelude.c > railsexpress/03-updated-miniprelude-for-gc-stats.patch
+diff -Nuarp ruby-3.0.6.a/miniprelude.c ruby-3.0.6.b/miniprelude.c > railsexpress/03-updated-miniprelude-for-gc-stats.patch
 
 railsexpress/04-updated-gc.rbinc-for-gc-stats.patch is a diff of a regenerated gc.rbinc file.
-in ruby-3.0.5.b:
+run in ruby-3.0.6.b:
 ruby ./tool/mk_builtin_loader.rb gc.rb
 
 generate the diff:
-diff -Nuarp ruby-3.0.5.a/gc.rbinc ruby-3.0.5.b/gc.rbinc > railsexpress/04-updated-gc.rbinc-for-gc-stats.patch
+diff -Nuarp ruby-3.0.6.a/gc.rbinc ruby-3.0.6.b/gc.rbinc > railsexpress/04-updated-gc.rbinc-for-gc-stats.patch
 
-# Ruby 3.0.5
+# Ruby 3.0.6
 1. Generate single patch file:
-wget https://cache.ruby-lang.org/pub/ruby/3.0/ruby-3.0.5.tar.gz;
-tar -zxvf ruby-3.0.5.tar.gz;
-cp -r ruby-3.0.5 ruby-3.0.5.b;
-mv ruby-3.0.5 ruby-3.0.5.a;
-patch -p1 -d ./ruby-3.0.5.b < ./ruby/c87c027f18c005460746a74c07cd80ee355b16e4.patch
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-2.3.0-ruby_version.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-2.1.0-Prevent-duplicated-paths-when-empty-version-string-i.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-2.1.0-Enable-configuration-of-archlibdir.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-2.1.0-always-use-i386.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-2.1.0-custom-rubygems-location.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-1.9.3-mkmf-verbose.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-2.7.0-Initialize-ABRT-hook.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-2.3.1-Rely-on-ldd-to-detect-glibc.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-dwarf5-avoid_crash-r1.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-2.7.1-Timeout-the-test_bug_reporter_add-witout-raising-err.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-3.1.0-Use-mmap-for-allocating-heap-pages-in-the-GC.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/rubygems-3.2.33-Fix-loading-operating_system-rb-customizations-too-late.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-spec-Fix-tests-on-tzdata-2022b.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-3.2.0-ruby-cgi-Fix-test_cgi_cookie_new_with_domain-to-pass.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./fedora/ruby-3.2.0-ruby-cgi-Loosen-the-domain-regex-to-accept.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./railsexpress/01-improve-gc-stats.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./railsexpress/02-malloc-trim.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./railsexpress/03-updated-miniprelude-for-gc-stats.patch;
-patch -p1 -d ./ruby-3.0.5.b < ./railsexpress/04-updated-gc.rbinc-for-gc-stats.patch;
-diff -Nuarp ruby-3.0.5.a ruby-3.0.5.b > ruby-3.0.5-fedora-railsexpress-patches.patch;
-rm -rf ruby-3.0.5.a ruby-3.0.5.b;
-rm -rf ruby-3.0.5.tar.gz;
+wget https://cache.ruby-lang.org/pub/ruby/3.0/ruby-3.0.6.tar.gz;
+tar -zxvf ruby-3.0.6.tar.gz;
+cp -r ruby-3.0.6 ruby-3.0.6.b;
+mv ruby-3.0.6 ruby-3.0.6.a;
+patch -p1 -d ./ruby-3.0.6.b < ./ruby/c87c027f18c005460746a74c07cd80ee355b16e4.patch
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-2.3.0-ruby_version.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-2.1.0-Prevent-duplicated-paths-when-empty-version-string-i.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-2.1.0-Enable-configuration-of-archlibdir.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-2.1.0-always-use-i386.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-2.1.0-custom-rubygems-location.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-1.9.3-mkmf-verbose.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-2.7.0-Initialize-ABRT-hook.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-2.3.1-Rely-on-ldd-to-detect-glibc.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-dwarf5-avoid_crash-r1.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-2.7.1-Timeout-the-test_bug_reporter_add-witout-raising-err.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-3.1.0-Use-mmap-for-allocating-heap-pages-in-the-GC.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/rubygems-3.2.33-Fix-loading-operating_system-rb-customizations-too-late.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-spec-Fix-tests-on-tzdata-2022b.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-3.2.0-ruby-cgi-Fix-test_cgi_cookie_new_with_domain-to-pass.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./fedora/ruby-3.2.0-ruby-cgi-Loosen-the-domain-regex-to-accept.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./railsexpress/01-improve-gc-stats.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./railsexpress/02-malloc-trim.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./railsexpress/03-updated-miniprelude-for-gc-stats.patch;
+patch -p1 -d ./ruby-3.0.6.b < ./railsexpress/04-updated-gc.rbinc-for-gc-stats.patch;
+diff -Nuarp ruby-3.0.6.a ruby-3.0.6.b > ruby-3.0.6-fedora-railsexpress-patches.patch;
+rm -rf ruby-3.0.6.a ruby-3.0.6.b;
+rm -rf ruby-3.0.6.tar.gz;
 
 3. run ruby-install with single patch file:
 don't need b/c we aren't cross building
   --target=x86_64-redhat-linux-gnu \
 don't need b/c ruby-install sets this
-  --prefix=/opt/rubies/ruby-3.0.5 \
+  --prefix=/opt/rubies/ruby-3.0.6 \
 
 sudo \
 ruby-install \
-  --patch ruby-3.0.5-fedora-railsexpress-patches.patch \
+  --patch ruby-3.0.6-fedora-railsexpress-patches.patch \
   --cleanup \
-  --install-dir /opt/rubies/ruby-3.0.5 \
-  ruby 3.0.5 -- \
+  --install-dir /opt/rubies/ruby-3.0.6 \
+  ruby 3.0.6 -- \
   --build=x86_64-redhat-linux-gnu \
   --host=x86_64-redhat-linux-gnu \
-  --exec-prefix=/opt/rubies/ruby-3.0.5 \
-  --libdir=/opt/rubies/ruby-3.0.5/lib \
-  --localstatedir=/opt/rubies/ruby-3.0.5/var \
-  --datarootdir=/opt/rubies/ruby-3.0.5/share \
-  --with-rubylibprefix=/opt/rubies/ruby-3.0.5/lib/ruby \
-  --with-archlibdir=/opt/rubies/ruby-3.0.5/lib \
+  --exec-prefix=/opt/rubies/ruby-3.0.6 \
+  --libdir=/opt/rubies/ruby-3.0.6/lib \
+  --localstatedir=/opt/rubies/ruby-3.0.6/var \
+  --datarootdir=/opt/rubies/ruby-3.0.6/share \
+  --with-rubylibprefix=/opt/rubies/ruby-3.0.6/lib/ruby \
+  --with-archlibdir=/opt/rubies/ruby-3.0.6/lib \
   '--with-rubyarchprefix=$(rubylibprefix)/$(arch)' \
   '--with-sitedir=$(rubylibprefix)/site_ruby' \
   '--with-sitearchdir=$(sitelibdir)/$(sitearch)' \
   '--with-vendordir=$(rubylibprefix)/vendor_ruby' \
   '--with-vendorarchdir=$(vendorlibdir)/$(sitearch)' \
-  --with-rubyhdrdir=/opt/rubies/ruby-3.0.5/include/ruby \
-  --with-rubyarchhdrdir=/opt/rubies/ruby-3.0.5/include/ruby \
+  --with-rubyhdrdir=/opt/rubies/ruby-3.0.6/include/ruby \
+  --with-rubyarchhdrdir=/opt/rubies/ruby-3.0.6/include/ruby \
   '--with-sitearchhdrdir=$(sitehdrdir)/$(arch)' \
   '--with-vendorarchhdrdir=$(vendorhdrdir)/$(arch)' \
   '--with-sitehdrdir=$(rubyhdrdir)/site_ruby' \
   '--with-vendorhdrdir=$(rubyhdrdir)/vendor_ruby' \
-  --with-rubygemsdir=/opt/rubies/ruby-3.0.5/lib \
+  --with-rubygemsdir=/opt/rubies/ruby-3.0.6/lib \
   --with-ruby-pc=ruby.pc \
   --with-compress-debug-sections=no \
   --disable-rpath \
