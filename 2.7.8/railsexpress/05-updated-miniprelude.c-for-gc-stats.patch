@@ -1,5 +1,5 @@
 --- ruby-2.7.8.a/miniprelude.c	2023-03-30 08:34:10.000000000 -0400
-+++ ruby-2.7.8.b/miniprelude.c	2023-04-06 21:02:41.151115400 -0400
++++ ruby-2.7.8.b/miniprelude.c	2023-05-20 18:18:48.666200654 -0400
 @@ -167,8 +167,9 @@ static const struct {
  static const char prelude_name1[] = "<internal:gc>";
  static const struct {

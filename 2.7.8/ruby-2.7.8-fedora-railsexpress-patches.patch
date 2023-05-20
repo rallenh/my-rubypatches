@@ -1,6 +1,6 @@
 diff -Nuarp ruby-2.7.8.a/abrt.c ruby-2.7.8.b/abrt.c
 --- ruby-2.7.8.a/abrt.c	1969-12-31 19:00:00.000000000 -0500
-+++ ruby-2.7.8.b/abrt.c	2023-04-06 21:01:28.209602300 -0400
++++ ruby-2.7.8.b/abrt.c	2023-05-20 18:17:27.029200688 -0400
 @@ -0,0 +1,12 @@
 +#include "internal.h"
 +
@@ -16,7 +16,7 @@ diff -Nuarp ruby-2.7.8.a/abrt.c ruby-2.7.8.b/abrt.c
 +}
 diff -Nuarp ruby-2.7.8.a/addr2line.c ruby-2.7.8.b/addr2line.c
 --- ruby-2.7.8.a/addr2line.c	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/addr2line.c	2023-04-06 21:01:48.653506800 -0400
++++ ruby-2.7.8.b/addr2line.c	2023-05-20 18:17:41.788381473 -0400
 @@ -163,11 +163,12 @@ typedef struct obj_info {
      struct dwarf_section debug_info;
      struct dwarf_section debug_line;
@@ -234,7 +234,7 @@ diff -Nuarp ruby-2.7.8.a/addr2line.c ruby-2.7.8.b/addr2line.c
                  struct LP(segment_command) *scmd = (struct LP(segment_command) *)lcmd;
 diff -Nuarp ruby-2.7.8.a/addr2line.c.orig ruby-2.7.8.b/addr2line.c.orig
 --- ruby-2.7.8.a/addr2line.c.orig	1969-12-31 19:00:00.000000000 -0500
-+++ ruby-2.7.8.b/addr2line.c.orig	2023-04-06 20:57:09.732839400 -0400
++++ ruby-2.7.8.b/addr2line.c.orig	2023-05-20 18:16:53.031784259 -0400
 @@ -0,0 +1,2665 @@
 +/**********************************************************************
 +
@@ -2903,7 +2903,7 @@ diff -Nuarp ruby-2.7.8.a/addr2line.c.orig ruby-2.7.8.b/addr2line.c.orig
 +#endif
 diff -Nuarp ruby-2.7.8.a/common.mk ruby-2.7.8.b/common.mk
 --- ruby-2.7.8.a/common.mk	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/common.mk	2023-04-06 21:01:28.237704400 -0400
++++ ruby-2.7.8.b/common.mk	2023-05-20 18:17:27.030200700 -0400
 @@ -81,7 +81,8 @@ ENC_MK        = enc.mk
  MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
  		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(mflags)
@@ -2916,7 +2916,7 @@ diff -Nuarp ruby-2.7.8.a/common.mk ruby-2.7.8.b/common.mk
  		class.$(OBJEXT) \
 diff -Nuarp ruby-2.7.8.a/configure.ac ruby-2.7.8.b/configure.ac
 --- ruby-2.7.8.a/configure.ac	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/configure.ac	2023-04-06 21:02:12.746713400 -0400
++++ ruby-2.7.8.b/configure.ac	2023-05-20 18:17:59.782601883 -0400
 @@ -98,7 +98,7 @@ RUBY_BASE_NAME=`echo ruby | sed "$progra
  RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
  AC_SUBST(RUBY_BASE_NAME)
@@ -3075,7 +3075,7 @@ diff -Nuarp ruby-2.7.8.a/configure.ac ruby-2.7.8.b/configure.ac
      AS_IF([test "${rb_cv_architecture_available}" = yes], [
 diff -Nuarp ruby-2.7.8.a/configure.ac.orig ruby-2.7.8.b/configure.ac.orig
 --- ruby-2.7.8.a/configure.ac.orig	1969-12-31 19:00:00.000000000 -0500
-+++ ruby-2.7.8.b/configure.ac.orig	2023-04-06 21:01:12.759100900 -0400
++++ ruby-2.7.8.b/configure.ac.orig	2023-05-20 18:17:16.445071044 -0400
 @@ -0,0 +1,4139 @@
 +dnl Process this file with autoconf to produce a configure script.
 +AC_INIT
@@ -7218,7 +7218,7 @@ diff -Nuarp ruby-2.7.8.a/configure.ac.orig ruby-2.7.8.b/configure.ac.orig
 +])
 diff -Nuarp ruby-2.7.8.a/eval_error.c ruby-2.7.8.b/eval_error.c
 --- ruby-2.7.8.a/eval_error.c	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/eval_error.c	2023-04-06 21:02:07.844521000 -0400
++++ ruby-2.7.8.b/eval_error.c	2023-05-20 18:17:55.733552286 -0400
 @@ -241,8 +241,8 @@ print_backtrace(const VALUE eclass, cons
  		     (len < threshold ? 0 : 9) + 1);
  
@@ -7232,7 +7232,7 @@ diff -Nuarp ruby-2.7.8.a/eval_error.c ruby-2.7.8.b/eval_error.c
  	    VALUE line = RARRAY_AREF(errat, reverse ? len - i : i);
 diff -Nuarp ruby-2.7.8.a/ext/openssl/openssl.gemspec ruby-2.7.8.b/ext/openssl/openssl.gemspec
 --- ruby-2.7.8.a/ext/openssl/openssl.gemspec	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/ext/openssl/openssl.gemspec	2023-04-06 21:01:44.256895000 -0400
++++ ruby-2.7.8.b/ext/openssl/openssl.gemspec	2023-05-20 18:17:38.205337584 -0400
 @@ -17,7 +17,6 @@ Gem::Specification.new do |spec|
  
    spec.required_ruby_version = ">= 2.3.0"
@@ -7243,7 +7243,7 @@ diff -Nuarp ruby-2.7.8.a/ext/openssl/openssl.gemspec ruby-2.7.8.b/ext/openssl/op
    spec.add_development_dependency "test-unit", "~> 3.0"
 diff -Nuarp ruby-2.7.8.a/gc.c ruby-2.7.8.b/gc.c
 --- ruby-2.7.8.a/gc.c	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/gc.c	2023-04-06 21:02:12.781366600 -0400
++++ ruby-2.7.8.b/gc.c	2023-05-20 18:17:59.783601895 -0400
 @@ -290,6 +290,9 @@ rb_gc_guarded_ptr_val(volatile VALUE *pt
  #ifndef GC_MALLOC_LIMIT_GROWTH_FACTOR
  #define GC_MALLOC_LIMIT_GROWTH_FACTOR 1.4
@@ -7581,7 +7581,7 @@ diff -Nuarp ruby-2.7.8.a/gc.c ruby-2.7.8.b/gc.c
  #if GC_PROFILE_MORE_DETAIL
 diff -Nuarp ruby-2.7.8.a/gc.rb ruby-2.7.8.b/gc.rb
 --- ruby-2.7.8.a/gc.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/gc.rb	2023-04-06 21:02:03.002104600 -0400
++++ ruby-2.7.8.b/gc.rb	2023-05-20 18:17:52.341510738 -0400
 @@ -158,6 +158,92 @@ module GC
    def self.compact
      __builtin_rb_gc_compact
@@ -7677,7 +7677,7 @@ diff -Nuarp ruby-2.7.8.a/gc.rb ruby-2.7.8.b/gc.rb
  module ObjectSpace
 diff -Nuarp ruby-2.7.8.a/gc.rbinc ruby-2.7.8.b/gc.rbinc
 --- ruby-2.7.8.a/gc.rbinc	2023-03-30 08:34:10.000000000 -0400
-+++ ruby-2.7.8.b/gc.rbinc	2023-04-06 21:02:47.747422000 -0400
++++ ruby-2.7.8.b/gc.rbinc	2023-05-20 18:18:54.536272556 -0400
 @@ -17,6 +17,14 @@ static void load_gc(void)
      RB_BUILTIN_FUNCTION(6, gc_stat, gc_stat, 1),
      RB_BUILTIN_FUNCTION(7, gc_latest_gc_info, gc_latest_gc_info, 1),
@@ -7710,7 +7710,7 @@ diff -Nuarp ruby-2.7.8.a/gc.rbinc ruby-2.7.8.b/gc.rbinc
    // load
 diff -Nuarp ruby-2.7.8.a/include/ruby/intern.h ruby-2.7.8.b/include/ruby/intern.h
 --- ruby-2.7.8.a/include/ruby/intern.h	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/include/ruby/intern.h	2023-04-06 21:02:03.027413800 -0400
++++ ruby-2.7.8.b/include/ruby/intern.h	2023-05-20 18:17:52.342510750 -0400
 @@ -544,6 +544,9 @@ void rb_gc(void);
  void rb_gc_copy_finalizer(VALUE,VALUE);
  VALUE rb_gc_enable(void);
@@ -7735,7 +7735,7 @@ diff -Nuarp ruby-2.7.8.a/include/ruby/intern.h ruby-2.7.8.b/include/ruby/intern.
  #define st_foreach_safe rb_st_foreach_safe
 diff -Nuarp ruby-2.7.8.a/lib/bundler/vendor/net-http-persistent/lib/net/http/persistent.rb ruby-2.7.8.b/lib/bundler/vendor/net-http-persistent/lib/net/http/persistent.rb
 --- ruby-2.7.8.a/lib/bundler/vendor/net-http-persistent/lib/net/http/persistent.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/lib/bundler/vendor/net-http-persistent/lib/net/http/persistent.rb	2023-04-06 21:01:39.282491500 -0400
++++ ruby-2.7.8.b/lib/bundler/vendor/net-http-persistent/lib/net/http/persistent.rb	2023-05-20 18:17:34.437291431 -0400
 @@ -197,10 +197,10 @@ class Bundler::Persistent::Net::HTTP::Pe
    ##
    # The default connection pool size is 1/4 the allowed open files.
@@ -7752,7 +7752,7 @@ diff -Nuarp ruby-2.7.8.a/lib/bundler/vendor/net-http-persistent/lib/net/http/per
    ##
 diff -Nuarp ruby-2.7.8.a/lib/mkmf.rb ruby-2.7.8.b/lib/mkmf.rb
 --- ruby-2.7.8.a/lib/mkmf.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/lib/mkmf.rb	2023-04-06 21:01:23.255469400 -0400
++++ ruby-2.7.8.b/lib/mkmf.rb	2023-05-20 18:17:23.470157093 -0400
 @@ -1930,7 +1930,7 @@ SRC
  SHELL = /bin/sh
  
@@ -7764,7 +7764,7 @@ diff -Nuarp ruby-2.7.8.a/lib/mkmf.rb ruby-2.7.8.b/lib/mkmf.rb
  ECHO1 = $(V:1=@ #{CONFIG['NULLCMD']})
 diff -Nuarp ruby-2.7.8.a/lib/rdoc/ri/paths.rb ruby-2.7.8.b/lib/rdoc/ri/paths.rb
 --- ruby-2.7.8.a/lib/rdoc/ri/paths.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/lib/rdoc/ri/paths.rb	2023-04-06 21:00:57.443354900 -0400
++++ ruby-2.7.8.b/lib/rdoc/ri/paths.rb	2023-05-20 18:17:03.213908978 -0400
 @@ -10,7 +10,7 @@ module RDoc::RI::Paths
    #:stopdoc:
    require 'rbconfig'
@@ -7776,7 +7776,7 @@ diff -Nuarp ruby-2.7.8.a/lib/rdoc/ri/paths.rb ruby-2.7.8.b/lib/rdoc/ri/paths.rb
                File.join RbConfig::CONFIG['ridir'], version
 diff -Nuarp ruby-2.7.8.a/lib/rubygems/defaults.rb ruby-2.7.8.b/lib/rubygems/defaults.rb
 --- ruby-2.7.8.a/lib/rubygems/defaults.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/lib/rubygems/defaults.rb	2023-04-06 21:00:57.480567000 -0400
++++ ruby-2.7.8.b/lib/rubygems/defaults.rb	2023-05-20 18:17:03.214908990 -0400
 @@ -32,13 +32,13 @@ module Gem
               [
                 File.dirname(RbConfig::CONFIG['sitedir']),
@@ -7814,7 +7814,7 @@ diff -Nuarp ruby-2.7.8.a/lib/rubygems/defaults.rb ruby-2.7.8.b/lib/rubygems/defa
    ##
 diff -Nuarp ruby-2.7.8.a/loadpath.c ruby-2.7.8.b/loadpath.c
 --- ruby-2.7.8.a/loadpath.c	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/loadpath.c	2023-04-06 21:01:18.527555100 -0400
++++ ruby-2.7.8.b/loadpath.c	2023-05-20 18:17:20.038115054 -0400
 @@ -65,22 +65,38 @@ const char ruby_initial_load_paths[] =
      RUBY_SEARCH_PATH "\0"
  #endif
@@ -7856,7 +7856,7 @@ diff -Nuarp ruby-2.7.8.a/loadpath.c ruby-2.7.8.b/loadpath.c
  #ifdef RUBY_THINARCH
 diff -Nuarp ruby-2.7.8.a/miniprelude.c ruby-2.7.8.b/miniprelude.c
 --- ruby-2.7.8.a/miniprelude.c	2023-03-30 08:34:10.000000000 -0400
-+++ ruby-2.7.8.b/miniprelude.c	2023-04-06 21:02:41.151115400 -0400
++++ ruby-2.7.8.b/miniprelude.c	2023-05-20 18:18:48.666200654 -0400
 @@ -167,8 +167,9 @@ static const struct {
  static const char prelude_name1[] = "<internal:gc>";
  static const struct {
@@ -8035,7 +8035,7 @@ diff -Nuarp ruby-2.7.8.a/miniprelude.c ruby-2.7.8.b/miniprelude.c
  #define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
 diff -Nuarp ruby-2.7.8.a/ruby.c ruby-2.7.8.b/ruby.c
 --- ruby-2.7.8.a/ruby.c	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/ruby.c	2023-04-06 21:01:28.263584900 -0400
++++ ruby-2.7.8.b/ruby.c	2023-05-20 18:17:27.031200712 -0400
 @@ -1463,10 +1463,14 @@ proc_options(long argc, char **argv, rub
  
  void Init_builtin_features(void);
@@ -8053,7 +8053,7 @@ diff -Nuarp ruby-2.7.8.a/ruby.c ruby-2.7.8.b/ruby.c
  
 diff -Nuarp ruby-2.7.8.a/ruby.c.orig ruby-2.7.8.b/ruby.c.orig
 --- ruby-2.7.8.a/ruby.c.orig	1969-12-31 19:00:00.000000000 -0500
-+++ ruby-2.7.8.b/ruby.c.orig	2023-04-06 20:54:15.860262700 -0400
++++ ruby-2.7.8.b/ruby.c.orig	2023-05-20 18:16:53.419789012 -0400
 @@ -0,0 +1,2485 @@
 +/**********************************************************************
 +
@@ -10542,7 +10542,7 @@ diff -Nuarp ruby-2.7.8.a/ruby.c.orig ruby-2.7.8.b/ruby.c.orig
 +}
 diff -Nuarp ruby-2.7.8.a/spec/ruby/core/process/groups_spec.rb ruby-2.7.8.b/spec/ruby/core/process/groups_spec.rb
 --- ruby-2.7.8.a/spec/ruby/core/process/groups_spec.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/spec/ruby/core/process/groups_spec.rb	2023-04-06 21:01:58.264193500 -0400
++++ ruby-2.7.8.b/spec/ruby/core/process/groups_spec.rb	2023-05-20 18:17:48.781467131 -0400
 @@ -2,13 +2,15 @@ require_relative '../../spec_helper'
  
  describe "Process.groups" do
@@ -10567,7 +10567,7 @@ diff -Nuarp ruby-2.7.8.a/spec/ruby/core/process/groups_spec.rb ruby-2.7.8.b/spec
  end
 diff -Nuarp ruby-2.7.8.a/spec/ruby/library/etc/getgrgid_spec.rb ruby-2.7.8.b/spec/ruby/library/etc/getgrgid_spec.rb
 --- ruby-2.7.8.a/spec/ruby/library/etc/getgrgid_spec.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/spec/ruby/library/etc/getgrgid_spec.rb	2023-04-06 21:01:58.284693200 -0400
++++ ruby-2.7.8.b/spec/ruby/library/etc/getgrgid_spec.rb	2023-05-20 18:17:48.781467131 -0400
 @@ -15,6 +15,7 @@ end
  platform_is_not :windows do
    grpname = nil
@@ -10578,7 +10578,7 @@ diff -Nuarp ruby-2.7.8.a/spec/ruby/library/etc/getgrgid_spec.rb ruby-2.7.8.b/spe
    } do
 diff -Nuarp ruby-2.7.8.a/spec/ruby/library/etc/struct_group_spec.rb ruby-2.7.8.b/spec/ruby/library/etc/struct_group_spec.rb
 --- ruby-2.7.8.a/spec/ruby/library/etc/struct_group_spec.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/spec/ruby/library/etc/struct_group_spec.rb	2023-04-06 21:01:58.309192100 -0400
++++ ruby-2.7.8.b/spec/ruby/library/etc/struct_group_spec.rb	2023-05-20 18:17:48.781467131 -0400
 @@ -3,6 +3,8 @@ require 'etc'
  
  describe "Struct::Group" do
@@ -10590,7 +10590,7 @@ diff -Nuarp ruby-2.7.8.a/spec/ruby/library/etc/struct_group_spec.rb ruby-2.7.8.b
      grpname.chomp!
 diff -Nuarp ruby-2.7.8.a/template/ruby.pc.in ruby-2.7.8.b/template/ruby.pc.in
 --- ruby-2.7.8.a/template/ruby.pc.in	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/template/ruby.pc.in	2023-04-06 21:00:57.421119600 -0400
++++ ruby-2.7.8.b/template/ruby.pc.in	2023-05-20 18:17:03.213908978 -0400
 @@ -9,6 +9,7 @@ MAJOR=@MAJOR@
  MINOR=@MINOR@
  TEENY=@TEENY@
@@ -10601,7 +10601,7 @@ diff -Nuarp ruby-2.7.8.a/template/ruby.pc.in ruby-2.7.8.b/template/ruby.pc.in
  RUBY_BASE_NAME=@RUBY_BASE_NAME@
 diff -Nuarp ruby-2.7.8.a/template/verconf.h.tmpl ruby-2.7.8.b/template/verconf.h.tmpl
 --- ruby-2.7.8.a/template/verconf.h.tmpl	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/template/verconf.h.tmpl	2023-04-06 21:01:18.543344400 -0400
++++ ruby-2.7.8.b/template/verconf.h.tmpl	2023-05-20 18:17:20.038115054 -0400
 @@ -36,6 +36,9 @@
  % if C["RUBY_SEARCH_PATH"]
  #define RUBY_SEARCH_PATH		"${RUBY_SEARCH_PATH}"
@@ -10614,7 +10614,7 @@ diff -Nuarp ruby-2.7.8.a/template/verconf.h.tmpl ruby-2.7.8.b/template/verconf.h
  % R["ruby_version"] = '"RUBY_LIB_VERSION"'
 diff -Nuarp ruby-2.7.8.a/test/-ext-/bug_reporter/test_bug_reporter.rb ruby-2.7.8.b/test/-ext-/bug_reporter/test_bug_reporter.rb
 --- ruby-2.7.8.a/test/-ext-/bug_reporter/test_bug_reporter.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/test/-ext-/bug_reporter/test_bug_reporter.rb	2023-04-06 21:01:53.357261300 -0400
++++ ruby-2.7.8.b/test/-ext-/bug_reporter/test_bug_reporter.rb	2023-05-20 18:17:45.325424798 -0400
 @@ -19,7 +19,7 @@ class TestBugReporter < Test::Unit::Test
      args = ["--disable-gems", "-r-test-/bug_reporter",
              "-C", tmpdir]
@@ -10626,7 +10626,7 @@ diff -Nuarp ruby-2.7.8.a/test/-ext-/bug_reporter/test_bug_reporter.rb ruby-2.7.8
    end
 diff -Nuarp ruby-2.7.8.a/test/fiddle/helper.rb ruby-2.7.8.b/test/fiddle/helper.rb
 --- ruby-2.7.8.a/test/fiddle/helper.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/test/fiddle/helper.rb	2023-04-06 21:01:32.854985700 -0400
++++ ruby-2.7.8.b/test/fiddle/helper.rb	2023-05-20 18:17:30.709245765 -0400
 @@ -6,115 +6,6 @@ require 'fiddle'
  
  libc_so = libm_so = nil
@@ -10745,7 +10745,7 @@ diff -Nuarp ruby-2.7.8.a/test/fiddle/helper.rb ruby-2.7.8.b/test/fiddle/helper.r
    # When the ruby binary is 32-bit and the host is 64-bit,
 diff -Nuarp ruby-2.7.8.a/test/ruby/test_process.rb ruby-2.7.8.b/test/ruby/test_process.rb
 --- ruby-2.7.8.a/test/ruby/test_process.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/test/ruby/test_process.rb	2023-04-06 21:01:58.335194000 -0400
++++ ruby-2.7.8.b/test/ruby/test_process.rb	2023-05-20 18:17:48.782467144 -0400
 @@ -1561,6 +1561,7 @@ class TestProcess < Test::Unit::TestCase
    end
  
@@ -10764,7 +10764,7 @@ diff -Nuarp ruby-2.7.8.a/test/ruby/test_process.rb ruby-2.7.8.b/test/ruby/test_p
      groups = Process.groups.map do |g|
 diff -Nuarp ruby-2.7.8.a/test/rubygems/test_gem.rb ruby-2.7.8.b/test/rubygems/test_gem.rb
 --- ruby-2.7.8.a/test/rubygems/test_gem.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/test/rubygems/test_gem.rb	2023-04-06 21:00:57.504523800 -0400
++++ ruby-2.7.8.b/test/rubygems/test_gem.rb	2023-05-20 18:17:03.214908990 -0400
 @@ -1378,7 +1378,8 @@ class TestGem < Gem::TestCase
  
    def test_self_user_dir
@@ -10786,7 +10786,7 @@ diff -Nuarp ruby-2.7.8.a/test/rubygems/test_gem.rb ruby-2.7.8.b/test/rubygems/te
      end
 diff -Nuarp ruby-2.7.8.a/tool/mkconfig.rb ruby-2.7.8.b/tool/mkconfig.rb
 --- ruby-2.7.8.a/tool/mkconfig.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/tool/mkconfig.rb	2023-04-06 21:01:02.601282200 -0400
++++ ruby-2.7.8.b/tool/mkconfig.rb	2023-05-20 18:17:07.731964320 -0400
 @@ -114,7 +114,7 @@ File.foreach "config.status" do |line|
      val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
      case name
@@ -10798,7 +10798,7 @@ diff -Nuarp ruby-2.7.8.a/tool/mkconfig.rb ruby-2.7.8.b/tool/mkconfig.rb
      when /^UNIVERSAL_ARCHNAMES$/
 diff -Nuarp ruby-2.7.8.a/tool/rbinstall.rb ruby-2.7.8.b/tool/rbinstall.rb
 --- ruby-2.7.8.a/tool/rbinstall.rb	2023-03-30 08:34:08.000000000 -0400
-+++ ruby-2.7.8.b/tool/rbinstall.rb	2023-04-06 21:01:18.561372900 -0400
++++ ruby-2.7.8.b/tool/rbinstall.rb	2023-05-20 18:17:20.038115054 -0400
 @@ -343,6 +343,7 @@ if CONFIG["vendordir"]
    vendorlibdir = CONFIG["vendorlibdir"]
    vendorarchlibdir = CONFIG["vendorarchdir"]

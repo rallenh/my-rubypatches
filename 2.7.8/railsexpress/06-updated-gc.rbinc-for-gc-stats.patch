@@ -1,5 +1,5 @@
 --- ruby-2.7.8.a/gc.rbinc	2023-03-30 08:34:10.000000000 -0400
-+++ ruby-2.7.8.b/gc.rbinc	2023-04-06 21:02:47.747422000 -0400
++++ ruby-2.7.8.b/gc.rbinc	2023-05-20 18:18:54.536272556 -0400
 @@ -17,6 +17,14 @@ static void load_gc(void)
      RB_BUILTIN_FUNCTION(6, gc_stat, gc_stat, 1),
      RB_BUILTIN_FUNCTION(7, gc_latest_gc_info, gc_latest_gc_info, 1),
