@@ -103,6 +103,7 @@ ruby-install \
   --patch ruby-3.0.6-fedora-railsexpress-patches.patch \
   --cleanup \
   --install-dir /opt/rubies/ruby-3.0.6 \
+  --no-install-deps \
   ruby 3.0.6 -- \
   --build=x86_64-redhat-linux-gnu \
   --host=x86_64-redhat-linux-gnu \
