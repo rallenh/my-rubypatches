@@ -47,7 +47,7 @@ patch -p1 -d ./ruby-2.7.5.b < ./railsexpress/04-more-detailed-stacktrace.patch;
 patch -p1 -d ./ruby-2.7.5.b < ./railsexpress/05-malloc-trim.patch;
 patch -p1 -d ./ruby-2.7.5.b < ./railsexpress/06-updated-miniprelude.c-for-gc-stats.patch;
 patch -p1 -d ./ruby-2.7.5.b < ./railsexpress/07-updated-gc.rbinc-for-gc-stats.patch;
-diff -Nuarp ruby-2.7.5.a ruby-2.7.5.b > ruby-2.7.5-fedora-cygwin-railsexpress-patches.patch;
+diff -Nuarp ruby-2.7.5.a ruby-2.7.5.b > ruby-2.7.5-cygwin-fedora-railsexpress-patches.patch;
 rm -rf ruby-2.7.5.a ruby-2.7.5.b;
 rm -rf ruby-2.7.5.tar.gz;
 
@@ -58,7 +58,7 @@ don't need b/c ruby-install sets this
   --prefix=/opt/rubies/ruby-2.7.5 \
 
 ruby-install \
-  --patch ruby-2.7.5-fedora-cygwin-railsexpress-patches.patch \
+  --patch ruby-2.7.5-cygwin-fedora-railsexpress-patches.patch \
   --cleanup \
   --install-dir /opt/rubies/ruby-2.7.5 \
   ruby 2.7.5 -- \
