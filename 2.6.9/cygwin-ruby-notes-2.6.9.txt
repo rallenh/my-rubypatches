@@ -44,7 +44,7 @@ patch -p1 -d ./ruby-2.6.9.b < ./railsexpress/02-fix-broken-tests-caused-by-ad.pa
 patch -p1 -d ./ruby-2.6.9.b < ./railsexpress/03-improve-gc-stats.patch;
 patch -p1 -d ./ruby-2.6.9.b < ./railsexpress/04-more-detailed-stacktrace.patch;
 patch -p1 -d ./ruby-2.6.9.b < ./railsexpress/05-malloc-trim.patch;
-diff -Nuarp ruby-2.6.9.a ruby-2.6.9.b > ruby-2.6.9-fedora-cygwin-railsexpress-patches.patch;
+diff -Nuarp ruby-2.6.9.a ruby-2.6.9.b > ruby-2.6.9-cygwin-fedora-railsexpress-patches.patch;
 rm -rf ruby-2.6.9.a ruby-2.6.9.b;
 rm -rf ruby-2.6.9.tar.gz;
 
@@ -57,7 +57,7 @@ don't need b/c ruby-install sets this
 # Cygwin updated their autotools to 2.71
 export WANT_AUTOCONF=2.69;
 ruby-install \
-  --patch ruby-2.6.9-fedora-cygwin-railsexpress-patches.patch \
+  --patch ruby-2.6.9-cygwin-fedora-railsexpress-patches.patch \
   --cleanup \
   --install-dir /opt/rubies/ruby-2.6.9 \
   ruby 2.6.9 -- \
