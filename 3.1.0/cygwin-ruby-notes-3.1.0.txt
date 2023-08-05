@@ -1,0 +1,106 @@
+Cygwin Ruby / ruby-install / chruby notes
+
+need to fork chrub/ruby-install/gem_home. ruby-install needs update for newer autotools (configure.ac)
+
+Cygwin can't build a static linked ruby.exe b/c not all of Ruby deps have (or are
+being built with static versions).
+
+Make sure there's no ruby.exe in the path.
+
+Most of this is modeled with/after what Fedora is doing, including their
+./configure and CFLAGS/CXXFLAGS/LDFLAGS.
+
+If there is no "base ruby", build will fail due to Railsexpress patches.
+railsexpress/04-updated-miniprelude-for-gc-stats.patch is a diff of a regenerated miniprelude.c file.
+ruby ./tool/generic_erb.rb -I. -o miniprelude.c \
+     ./template/prelude.c.tmpl \
+     ./ast.rb \
+     ./dir.rb \
+     ./gc.rb \
+     ./numeric.rb \
+     ./io.rb \
+     ./marshal.rb \
+     ./pack.rb \
+     ./trace_point.rb \
+     ./warning.rb \
+     ./array.rb \
+     ./kernel.rb \
+     ./ractor.rb \
+     ./timev.rb \
+     ./nilclass.rb \
+     ./prelude.rb \
+     ./gem_prelude.rb \
+     ./yjit.rb
+diff -Nuarp ruby-3.1.0.a/miniprelude.c  ruby-3.1.0.b/miniprelude.c > railsexpress/04-updated-miniprelude-for-gc-stats.patch
+
+railsexpress/05-updated-gc.rbinc-for-gc-stats.patch is a diff of a regenerated gc.rbinc file.
+ruby ./tool/mk_builtin_loader.rb gc.rb
+diff -Nuarp ruby-3.1.0.a/gc.rbinc ruby-3.1.0.b/gc.rbinc > railsexpress/05-updated-gc.rbinc-for-gc-stats.patch
+
+# Ruby 3.1.0
+1. Generate single patch file:
+wget https://cache.ruby-lang.org/pub/ruby/3.1/ruby-3.1.0.tar.gz;
+tar -zxvf ruby-3.1.0.tar.gz;
+cp -r ruby-3.1.0 ruby-3.1.0.b;
+mv ruby-3.1.0 ruby-3.1.0.a;
+patch -p1 -d ./ruby-3.1.0.b < ./fedora/ruby-2.3.0-ruby_version.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./fedora/ruby-2.1.0-Prevent-duplicated-paths-when-empty-version-string-i.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./fedora/ruby-2.1.0-Enable-configuration-of-archlibdir.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./fedora/ruby-2.1.0-always-use-i386.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./fedora/ruby-2.1.0-custom-rubygems-location.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./fedora/ruby-1.9.3-mkmf-verbose.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./fedora/ruby-2.7.0-Initialize-ABRT-hook.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./fedora/ruby-2.7.1-Timeout-the-test_bug_reporter_add-witout-raising-err.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./fedora/ruby-3.1.0-SSL_read-EOF-handling.patch;
+#patch -p1 -d ./ruby-3.1.0.b < ./cygwin/2.0.0-cygwin-configure-rebase.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./cygwin/2.0.0-cygwin-rubygems-rebase.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./cygwin/2.5.1-win32-resolv-rebase.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./railsexpress/01-fix-with-openssl-dir-option.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./railsexpress/02-improve-gc-stats.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./railsexpress/03-malloc-trim.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./railsexpress/04-updated-miniprelude-for-gc-stats.patch;
+patch -p1 -d ./ruby-3.1.0.b < ./railsexpress/05-updated-gc.rbinc-for-gc-stats.patch;
+diff -Nuarp ruby-3.1.0.a ruby-3.1.0.b > ruby-3.1.0-cygwin-fedora-railsexpress-patches.patch;
+rm -rf ruby-3.1.0.a ruby-3.1.0.b;
+rm -rf ruby-3.1.0.tar.gz;
+
+3. run ruby-install with single patch file:
+don't need b/c we aren't cross building
+  --target=x86_64-pc-cygwin \
+don't need b/c ruby-install sets this
+  --prefix=/opt/rubies/ruby-3.1.0 \
+
+ruby-install \
+  --patch ruby-3.1.0-cygwin-fedora-railsexpress-patches.patch \
+  --cleanup \
+  --install-dir /opt/rubies/ruby-3.1.0 \
+  ruby 3.1.0 -- \
+  --build=x86_64-pc-cygwin \
+  --host=x86_64-pc-cygwin \
+  --exec-prefix=/opt/rubies/ruby-3.1.0 \
+  --libdir=/opt/rubies/ruby-3.1.0/lib \
+  --localstatedir=/opt/rubies/ruby-3.1.0/var \
+  --datarootdir=/opt/rubies/ruby-3.1.0/share \
+  --with-rubylibprefix=/opt/rubies/ruby-3.1.0/lib/ruby \
+  --with-archlibdir=/opt/rubies/ruby-3.1.0/lib \
+  '--with-rubyarchprefix=$(rubylibprefix)/$(arch)' \
+  '--with-sitedir=$(rubylibprefix)/site_ruby' \
+  '--with-sitearchdir=$(sitelibdir)/$(sitearch)' \
+  '--with-vendordir=$(rubylibprefix)/vendor_ruby' \
+  '--with-vendorarchdir=$(vendorlibdir)/$(sitearch)' \
+  --with-rubyhdrdir=/opt/rubies/ruby-3.1.0/include/ruby \
+  --with-rubyarchhdrdir=/opt/rubies/ruby-3.1.0/include/ruby \
+  '--with-sitearchhdrdir=$(sitehdrdir)/$(arch)' \
+  '--with-vendorarchhdrdir=$(vendorhdrdir)/$(arch)' \
+  '--with-sitehdrdir=$(rubyhdrdir)/site_ruby' \
+  '--with-vendorhdrdir=$(rubyhdrdir)/vendor_ruby' \
+  --with-rubygemsdir=/opt/rubies/ruby-3.1.0/lib \
+  --with-ruby-pc=ruby.pc \
+  --with-compress-debug-sections=no \
+  --disable-rpath \
+  --enable-shared \
+  --disable-multiarch \
+  --enable-debug-env \
+  CFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -m64 -mtune=generic -fasynchronous-unwind-tables -fcf-protection" \
+  CXXFLAGS="-O2 -g -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -fexceptions -fstack-protector-strong -grecord-gcc-switches -m64 -mtune=generic -fasynchronous-unwind-tables -fcf-protection" \
+  EXTLDFLAGS="-Wl,--no-undefined -Wl,--no-allow-shlib-undefined -Wl,--as-needed -Wl,--high-entropy-va -Wl,--export-all-symbols -Wl,--dynamicbase -Wl,--nxcompat"
