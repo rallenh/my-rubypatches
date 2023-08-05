@@ -1,0 +1,11 @@
+ruby -rrbconfig -e "puts RbConfig::CONFIG['CC_VERSION_MESSAGE'] \|\| puts CC_VERSION_MESSAGE not present" >> post-install-info.txt;
+ruby -rrbconfig -e "puts RbConfig::CONFIG['CC_VERSION_MESSAGE'] || puts('CC_VERSION_MESSAGE not present')" >> post-install-info.txt;
+#ruby -rrbconfig -e "puts RbConfig::CONFIG['configure_args']" >> post-install-info.txt;
+gem env | grep -v cygdrive | grep -v '\-\ /home/allen' >> post-install-info.txt;
+gem list >> post-install-info.txt;
+
+
+find . -name '*.txt' -exec chmod -x {} \;
+find . -name '*.patch' -exec chmod -x {} \;
+find . -name '*.cygport' -exec chmod -x {} \;
+find . -name '*.spec' -exec chmod -x {} \;
