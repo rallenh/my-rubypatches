@@ -4,34 +4,6 @@ need to fork chrub/ruby-install/gem_home. ruby-install needs update for newer au
 
 Make sure there's no /usr/bin/ruby in the path.
 
-
-newer Fedora's have migrated to OpenSSL 3+, but they still provide compatilbity
-packaging, e.g. openssl1.1 and compat-openssl10
-
-remove the OpenSSL 3+ devel packages via RPM to prevent removal of dependencies.
-$ sudo rpm -e --nodeps openssl-devel.i686 openssl-devel.x86_64
-
-install the OpenSSL 1.1 devel x86_64 (arch) package just for ruby-install use.
-$ sudo dnf install openssl1.1-devel.x86_64
-
-run the ruby-install command with --no-install-deps.
-
-tested with ruby-install 0.9.0, the --no-install-deps is because ruby-install
-isn't smart enough to know the right package names when the combinations of OS,
-packaging system, and Ruby version, e.g. Ruby 2.7.6 requires
-OpenSSL >= 1.0.1, < 3.0.0
-but on Fedora 36+, an OS that has migrated to OpenSSL 3+, older versions of
-OpenSSL are in packages compat-openssl10 (libs only) or openssl1.1-devel
-
-
-*** Following extensions are not compiled:
-openssl:
-        Could not be configured. It will not be installed.
-        /usr/local/src/ruby-2.7.6/ext/openssl/extconf.rb:111: OpenSSL >= 1.0.1, < 3.0.0 or LibreSSL >= 2.5.0 is required
-        Check ext/openssl/mkmf.log for more details.
-*** Fix the problems, then remove these directories and try again if you want.
-
-
 Most of this is modeled with/after what Fedora is doing, including their
 ./configure and CFLAGS/CXXFLAGS/LDFLAGS.
 
