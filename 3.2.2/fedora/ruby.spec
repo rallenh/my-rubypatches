@@ -1,6 +1,6 @@
 %global major_version 3
 %global minor_version 2
-%global teeny_version 0
+%global teeny_version 2
 %global major_minor_version %{major_version}.%{minor_version}
 
 %global ruby_version %{major_minor_version}.%{teeny_version}
@@ -27,20 +27,20 @@
 %global rubygems_dir %{_datadir}/rubygems
 
 # Bundled libraries versions
-%global rubygems_version 3.4.1
+%global rubygems_version 3.4.10
 %global rubygems_molinillo_version 0.8.0
 %global rubygems_optparse_version 0.3.0
 %global rubygems_tsort_version 0.1.0
 
 # Default gems.
-%global bundler_version 2.4.1
+%global bundler_version 2.4.10
 %global bundler_connection_pool_version 2.3.0
 %global bundler_fileutils_version 1.7.0
 %global bundler_pub_grub_version 0.5.0
 %global bundler_net_http_persistent_version 4.0.1
 %global bundler_thor_version 1.2.1
 %global bundler_tsort_version 0.1.1
-%global bundler_uri_version 0.12.0
+%global bundler_uri_version 0.12.1
 
 %global bigdecimal_version 3.1.3
 %global did_you_mean_version 1.6.3
@@ -101,14 +101,14 @@
 Summary: An interpreter of object-oriented scripting language
 Name: ruby
 Version: %{ruby_version}%{?development_release}
-Release: 176%{?dist}
+Release: 180%{?dist}
 # BSD-3-Clause: missing/{crypt,mt19937,setproctitle}.c
 # ISC: missing/strl{cat,cpy}.c
 # Public Domain for example for: include/ruby/st.h, strftime.c, missing/*, ...
 # MIT and CCO: ccan/*
 # zlib: ext/digest/md5/md5.*, ext/nkf/nkf-utf8/nkf.c
 # Unicode-DFS-2015: some of enc/trans/**/*.src
-License: (Ruby OR BSD-2-Clause) AND BSD-3-Clause AND ICS AND Public Domain AND MIT and CC0 AND zlib AND Unicode-DFS-2015
+License: (Ruby OR BSD-2-Clause) AND BSD-3-Clause AND ISC AND Public Domain AND MIT and CC0 AND zlib AND Unicode-DFS-2015
 URL: https://www.ruby-lang.org/
 Source0: https://cache.ruby-lang.org/pub/%{name}/%{major_minor_version}/%{ruby_archive}.tar.xz
 Source1: operating_system.rb
@@ -169,9 +169,16 @@ Patch8: ruby-2.7.1-Timeout-the-test_bug_reporter_add-witout-raising-err.patch
 # https://bugs.ruby-lang.org/issues/19297
 Patch9: ruby-3.2.0-Revert-Fix-test-syntax-suggest-order.patch
 Patch10: ruby-3.2.0-Revert-Test-syntax_suggest-by-make-check.patch
+# Fix `OpenSSL::X509::CertificateError: invalid digest` errors on ELN. This
+# also might help Fedor, if/when
+# https://fedoraproject.org/wiki/Changes/StrongCryptoSettings3Forewarning2
+# is accepted.
+# https://github.com/ruby/spec/pull/990
+# https://bugs.ruby-lang.org/issues/19307
+Patch11: ruby-3.2.0-Use-SHA256-instead-of-SHA1.patch
 
 Requires: %{name}-libs%{?_isa} = %{version}-%{release}
-Suggests: rubypick
+%{?with_rubypick:Suggests: rubypick}
 Recommends: ruby(rubygems) >= %{rubygems_version}
 Recommends: rubygem(bigdecimal) >= %{bigdecimal_version}
 
@@ -258,9 +265,9 @@ This package includes the libruby, necessary to run Ruby.
 Summary:    The Ruby standard for packaging ruby libraries
 Version:    %{rubygems_version}
 # BSD-2-Clause: lib/rubygems/tsort/
-# BSD-2-Clause OR RUBY: lib/rubygems/optparse/
+# BSD-2-Clause OR Ruby: lib/rubygems/optparse/
 # MIT: lib/rubygems/resolver/molinillo
-License:    (Ruby OR MIT) AND BSD-2-Clause AND (BSD-2-Clause OR RUBY) AND MIT
+License:    (Ruby OR MIT) AND BSD-2-Clause AND (BSD-2-Clause OR Ruby) AND MIT
 Requires:   ruby(release)
 Recommends: rubygem(bundler) >= %{bundler_version}
 Recommends: rubygem(rdoc) >= %{rdoc_version}
@@ -345,7 +352,7 @@ Version:    %{rdoc_version}
 # BSD-3-Clause: lib/rdoc/generator/darkfish.rb
 # CC-BY-2.5: lib/rdoc/generator/template/darkfish/images/loadingAnimation.gif
 # OFL-1.1-RFN: lib/rdoc/generator/template/darkfish/css/fonts.css
-License:    GPL-2.0 AND Ruby AND BSD-3-Clause AND CC-BY-2.5 AND OFL-1.1-RFN
+License:    GPL-2.0-only AND Ruby AND BSD-3-Clause AND CC-BY-2.5 AND OFL-1.1-RFN
 Requires:   ruby(release)
 Requires:   ruby(rubygems) >= %{rubygems_version}
 Requires:   rubygem(io-console) >= %{io_console_version}
@@ -628,10 +635,6 @@ analysis result in RBS format, a standard type description format for Ruby
 %prep
 %setup -q -n %{ruby_archive}
 
-# Remove bundled libraries to be sure they are not used.
-rm -rf ext/psych/yaml
-rm -rf ext/fiddle/libffi*
-
 %patch0 -p1
 %patch1 -p1
 %patch2 -p1
@@ -642,6 +645,7 @@ rm -rf ext/fiddle/libffi*
 %patch8 -p1
 %patch9 -p1
 %patch10 -p1
+%patch11 -p1
 
 # Provide an example of usage of the tapset:
 cp -a %{SOURCE3} .
@@ -716,15 +720,15 @@ test ! "$(ls -A %{buildroot}%{rubygems_dir}/rubygems/ssl_certs/ 2>/dev/null)"
 
 # Move macros file into proper place and replace the %%{name} macro, since it
 # would be wrongly evaluated during build of other packages.
-mkdir -p %{buildroot}%{_rpmconfigdir}/macros.d
-install -m 644 %{SOURCE4} %{buildroot}%{_rpmconfigdir}/macros.d/macros.ruby
-sed -i "s/%%{name}/%{name}/" %{buildroot}%{_rpmconfigdir}/macros.d/macros.ruby
-install -m 644 %{SOURCE5} %{buildroot}%{_rpmconfigdir}/macros.d/macros.rubygems
-sed -i "s/%%{name}/%{name}/" %{buildroot}%{_rpmconfigdir}/macros.d/macros.rubygems
+mkdir -p %{buildroot}%{_rpmmacrodir}
+install -m 644 %{SOURCE4} %{buildroot}%{_rpmmacrodir}/macros.ruby
+sed -i "s/%%{name}/%{name}/" %{buildroot}%{_rpmmacrodir}/macros.ruby
+install -m 644 %{SOURCE5} %{buildroot}%{_rpmmacrodir}/macros.rubygems
+sed -i "s/%%{name}/%{name}/" %{buildroot}%{_rpmmacrodir}/macros.rubygems
 
 # Install dependency generators.
-mkdir -p %{buildroot}%{_rpmconfigdir}/fileattrs
-install -m 644 %{SOURCE8} %{buildroot}%{_rpmconfigdir}/fileattrs
+mkdir -p %{buildroot}%{_fileattrsdir}
+install -m 644 %{SOURCE8} %{buildroot}%{_fileattrsdir}
 install -m 755 %{SOURCE9} %{buildroot}%{_rpmconfigdir}
 install -m 755 %{SOURCE10} %{buildroot}%{_rpmconfigdir}
 install -m 755 %{SOURCE11} %{buildroot}%{_rpmconfigdir}
@@ -1003,11 +1007,6 @@ DISABLE_TESTS="$DISABLE_TESTS -n !/Fiddle::TestFunction#test_argument_count/"
 mv test/ruby/test_jit.rb{,.disable} || :
 %endif
 
-# Disable `TestGCCompact#test_moving_objects_between_size_pools` due to:
-# `NoMethodError: undefined method `>=' for nil:NilClass` error.
-# https://bugs.ruby-lang.org/issues/19248
-DISABLE_TESTS="$DISABLE_TESTS -n !/TestGCCompact#test_moving_objects_between_size_pools/"
-
 # Give an option to increase the timeout in tests.
 # https://bugs.ruby-lang.org/issues/16921
 %{?test_timeout_scale:RUBY_TEST_TIMEOUT_SCALE="%{test_timeout_scale}"} \
@@ -1033,7 +1032,7 @@ DISABLE_TESTS="$DISABLE_TESTS -n !/TestGCCompact#test_moving_objects_between_siz
 %license GPL
 %license LEGAL
 
-%{_rpmconfigdir}/macros.d/macros.ruby
+%{_rpmmacrodir}/macros.ruby
 
 %{_includedir}/*
 %{_libdir}/libruby.so
@@ -1260,8 +1259,8 @@ DISABLE_TESTS="$DISABLE_TESTS -n !/TestGCCompact#test_moving_objects_between_siz
 %exclude %{gem_dir}/cache/*
 
 %files -n rubygems-devel
-%{_rpmconfigdir}/macros.d/macros.rubygems
-%{_rpmconfigdir}/fileattrs/rubygems.attr
+%{_rpmmacrodir}/macros.rubygems
+%{_fileattrsdir}/rubygems.attr
 %{_rpmconfigdir}/rubygems.req
 %{_rpmconfigdir}/rubygems.prov
 %{_rpmconfigdir}/rubygems.con
@@ -1322,12 +1321,12 @@ DISABLE_TESTS="$DISABLE_TESTS -n !/TestGCCompact#test_moving_objects_between_siz
 %{gem_dir}/specifications/default/syntax_suggest-1.0.2.gemspec
 %{gem_dir}/specifications/default/syslog-0.1.1.gemspec
 %{gem_dir}/specifications/default/tempfile-0.1.3.gemspec
-%{gem_dir}/specifications/default/time-0.2.1.gemspec
+%{gem_dir}/specifications/default/time-0.2.2.gemspec
 %{gem_dir}/specifications/default/timeout-0.3.1.gemspec
 %{gem_dir}/specifications/default/tmpdir-0.1.3.gemspec
 %{gem_dir}/specifications/default/tsort-0.1.1.gemspec
 %{gem_dir}/specifications/default/un-0.2.1.gemspec
-%{gem_dir}/specifications/default/uri-0.12.0.gemspec
+%{gem_dir}/specifications/default/uri-0.12.1.gemspec
 %{gem_dir}/specifications/default/weakref-0.1.2.gemspec
 #%%{gem_dir}/specifications/default/win32ole-1.8.9.gemspec
 %{gem_dir}/specifications/default/yaml-0.2.1.gemspec
@@ -1568,11 +1567,36 @@ DISABLE_TESTS="$DISABLE_TESTS -n !/TestGCCompact#test_moving_objects_between_siz
 
 
 %changelog
+* Fri Mar 31 2023 Vít Ondruch <vondruch@redhat.com> - 3.2.2-180
+- Upgrade to Ruby 3.2.2.
+  Resolves: rhbz#2183284
+
+* Thu Feb 09 2023 Vít Ondruch <vondruch@redhat.com> - 3.2.1-179
+- Upgrade to Ruby 3.2.1.
+  Resolves: rhbz#2168292
+
+* Fri Jan 20 2023 Fedora Release Engineering <releng@fedoraproject.org>
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_38_Mass_Rebuild
+
+* Thu Jan 05 2023 Vít Ondruch <vondruch@redhat.com> - 3.2.0-177
+- Fix ELN FTBFS due to stronger crypto settings.
+
 * Mon Jan 02 2023 Vít Ondruch <vondruch@redhat.com> - 3.2.0-176
 - Upgrade to Ruby 3.2.0.
 
+* Thu Dec 22 2022 Yaakov Selkowitz <yselkowi@redhat.com> - 3.1.3-175
+- Use SHA256 instead of SHA1 where needed in Openssl tests
+- Let OpenSSL choose the digest if digest for Openssl::OCSP::BasicResponse#sign is nil
+
+* Wed Dec 21 2022 Vít Ondruch <vondruch@redhat.com> - 3.1.3-174
+- Fix for tzdata-2022g.
+
 * Thu Dec 08 2022 Vít Ondruch <vondruch@redhat.com> - 3.1.3-173
 - Disable MJIT test cases on i686 due to issues with PCH.
+- Fix CGI causing issue with leading '.' in domain names.
+
+* Thu Nov 24 2022 Vít Ondruch <vondruch@redhat.com> - 3.1.3-172
+- Upgrade to Ruby 3.1.3.
 
 * Tue Nov 22 2022 Vít Ondruch <vondruch@redhat.com> - 3.1.2-171
 - Re-disable package notes. It causes additional issues with installing binary
