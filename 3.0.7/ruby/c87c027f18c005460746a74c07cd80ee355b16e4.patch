@@ -1,0 +1,24 @@
+From c87c027f18c005460746a74c07cd80ee355b16e4 Mon Sep 17 00:00:00 2001
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+Date: Tue, 21 Dec 2021 16:31:43 +0900
+Subject: [PATCH] configure.in: unexpand exec_prefix in includedir
+
+Replace `exec_prefix` in includedir as well as bindir, libdir, and
+so on. [Bug #18373]
+---
+ configure.ac | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index 7177d5bb8e57..5a6b074f8a1b 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -3297,7 +3297,7 @@ AS_IF([test x"${exec_prefix}" != xNONE], [
+     RUBY_EXEC_PREFIX=$ac_default_prefix
+ ])
+ pat=`echo "${RUBY_EXEC_PREFIX}" | tr -c '\012' .`'\(.*\)'
+-for var in bindir libdir rubylibprefix; do
++for var in bindir includedir libdir rubylibprefix; do
+     eval val='"$'$var'"'
+     AS_CASE(["$val"], ["${RUBY_EXEC_PREFIX}"*], [val='${exec_prefix}'"`expr \"$val\" : \"$pat\"`"])
+     eval $var='"$val"'

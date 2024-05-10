@@ -1,0 +1,137 @@
+Fedora Ruby / ruby-install / chruby notes
+
+this reciepe is still using OpenSSL 1.1.1 and not OpenSSL 3.0.
+OpenSSL 3.0 changes for Ruby by Fedora are here:
+https://src.fedoraproject.org/rpms/ruby/tree/a51a61214c0c78df737f4badba1af8b7a429cc78
+
+to get OpenSSL 1.1 -devel installed:
+
+1. remove OpenSSL 3.0 -devel(s):
+
+  sudo rpm -e --nodeps openssl-devel.i686
+  sudo rpm -e --nodeps openssl-devel.x86_64
+
+2. install OpenSSL1.1 -devel (x86_64 only):
+
+  sudo dnf install openssl1.1-devel.x86_64 -y
+
+3. run ruby-install
+
+4. remove OpenSSL 1.1 -devel
+
+  sudo rpm -e --nodeps openssl1.1-devel.x86_64
+
+5. install OpenSSL 3 -devel(s):
+
+  sudo dnf install openssl-devel.i686 openssl-devel.x86_64 -y
+
+need to fork chrub/ruby-install/gem_home. ruby-install needs update for newer autotools (configure.ac)
+
+Make sure there's no /usr/bin/ruby in the path.
+
+Most of this is modeled with/after what Fedora is doing, including their
+./configure and CFLAGS/CXXFLAGS/LDFLAGS.
+
+If there is no "BASERUBY", build will fail due to Railsexpress patches.
+railsexpress/03-updated-miniprelude-for-gc-stats.patch is a diff of a regenerated miniprelude.c file.
+
+in ruby-3.0.7.b:
+ruby ./tool/generic_erb.rb -I. -o miniprelude.c \
+     ./template/prelude.c.tmpl \
+     ./ast.rb \
+     ./dir.rb \
+     ./gc.rb \
+     ./integer.rb \
+     ./io.rb \
+     ./pack.rb \
+     ./trace_point.rb \
+     ./warning.rb \
+     ./array.rb \
+     ./kernel.rb \
+     ./ractor.rb \
+     ./prelude.rb \
+     ./gem_prelude.rb
+
+generate the diff:
+diff -Nuarp ruby-3.0.7.a/miniprelude.c ruby-3.0.7.b/miniprelude.c > railsexpress/03-updated-miniprelude-for-gc-stats.patch
+
+railsexpress/04-updated-gc.rbinc-for-gc-stats.patch is a diff of a regenerated gc.rbinc file.
+run in ruby-3.0.7.b:
+ruby ./tool/mk_builtin_loader.rb gc.rb
+
+generate the diff:
+diff -Nuarp ruby-3.0.7.a/gc.rbinc ruby-3.0.7.b/gc.rbinc > railsexpress/04-updated-gc.rbinc-for-gc-stats.patch
+
+# Ruby 3.0.7
+1. Generate single patch file:
+wget https://cache.ruby-lang.org/pub/ruby/3.0/ruby-3.0.7.tar.gz;
+tar -zxvf ruby-3.0.7.tar.gz;
+cp -r ruby-3.0.7 ruby-3.0.7.b;
+mv ruby-3.0.7 ruby-3.0.7.a;
+patch -p1 -d ./ruby-3.0.7.b < ./ruby/c87c027f18c005460746a74c07cd80ee355b16e4.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-2.3.0-ruby_version.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-2.1.0-Prevent-duplicated-paths-when-empty-version-string-i.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-2.1.0-Enable-configuration-of-archlibdir.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-2.1.0-always-use-i386.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-2.1.0-custom-rubygems-location.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-1.9.3-mkmf-verbose.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-2.7.0-Initialize-ABRT-hook.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-2.3.1-Rely-on-ldd-to-detect-glibc.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-dwarf5-avoid_crash-r1.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-2.7.1-Timeout-the-test_bug_reporter_add-witout-raising-err.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-3.1.0-Use-mmap-for-allocating-heap-pages-in-the-GC.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/rubygems-3.2.33-Fix-loading-operating_system-rb-customizations-too-late.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-spec-Fix-tests-on-tzdata-2022b.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-3.2.0-ruby-cgi-Fix-test_cgi_cookie_new_with_domain-to-pass.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./fedora/ruby-3.2.0-ruby-cgi-Loosen-the-domain-regex-to-accept.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./railsexpress/01-improve-gc-stats.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./railsexpress/02-malloc-trim.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./railsexpress/03-updated-miniprelude-for-gc-stats.patch;
+patch -p1 -d ./ruby-3.0.7.b < ./railsexpress/04-updated-gc.rbinc-for-gc-stats.patch;
+diff -Nuarp ruby-3.0.7.a ruby-3.0.7.b > ruby-3.0.7-fedora-railsexpress-patches.patch;
+rm -rf ruby-3.0.7.a ruby-3.0.7.b;
+rm -rf ruby-3.0.7.tar.gz;
+
+3. run ruby-install with single patch file:
+don't need b/c we aren't cross building
+  --target=x86_64-redhat-linux-gnu \
+don't need b/c ruby-install sets this
+  --prefix=/opt/rubies/ruby-3.0.7 \
+
+sudo \
+ruby-install \
+  --patch ruby-3.0.7-fedora-railsexpress-patches.patch \
+  --cleanup \
+  --install-dir /opt/rubies/ruby-3.0.7 \
+  --no-install-deps \
+  ruby 3.0.7 -- \
+  --build=x86_64-redhat-linux-gnu \
+  --host=x86_64-redhat-linux-gnu \
+  --exec-prefix=/opt/rubies/ruby-3.0.7 \
+  --libdir=/opt/rubies/ruby-3.0.7/lib \
+  --localstatedir=/opt/rubies/ruby-3.0.7/var \
+  --datarootdir=/opt/rubies/ruby-3.0.7/share \
+  --with-rubylibprefix=/opt/rubies/ruby-3.0.7/lib/ruby \
+  --with-archlibdir=/opt/rubies/ruby-3.0.7/lib \
+  '--with-rubyarchprefix=$(rubylibprefix)/$(arch)' \
+  '--with-sitedir=$(rubylibprefix)/site_ruby' \
+  '--with-sitearchdir=$(sitelibdir)/$(sitearch)' \
+  '--with-vendordir=$(rubylibprefix)/vendor_ruby' \
+  '--with-vendorarchdir=$(vendorlibdir)/$(sitearch)' \
+  --with-rubyhdrdir=/opt/rubies/ruby-3.0.7/include/ruby \
+  --with-rubyarchhdrdir=/opt/rubies/ruby-3.0.7/include/ruby \
+  '--with-sitearchhdrdir=$(sitehdrdir)/$(arch)' \
+  '--with-vendorarchhdrdir=$(vendorhdrdir)/$(arch)' \
+  '--with-sitehdrdir=$(rubyhdrdir)/site_ruby' \
+  '--with-vendorhdrdir=$(rubyhdrdir)/vendor_ruby' \
+  --with-rubygemsdir=/opt/rubies/ruby-3.0.7/lib \
+  --with-ruby-pc=ruby.pc \
+  --with-compress-debug-sections=no \
+  --disable-rpath \
+  --disable-shared \
+  --enable-static \
+  --disable-multiarch \
+  --enable-debug-env \
+  CFLAGS="-O2  -fexceptions -g -grecord-gcc-switches -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1  -m64  -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection" \
+  CXXFLAGS="-O2  -fexceptions -g -grecord-gcc-switches -pipe -Wall -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -Wp,-D_GLIBCXX_ASSERTIONS -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1 -fstack-protector-strong -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1  -m64  -mtune=generic -fasynchronous-unwind-tables -fstack-clash-protection -fcf-protection" \
+  EXTLDFLAGS="-Wl,-z,relro -Wl,--as-needed  -Wl,-z,now -specs=/usr/lib/rpm/redhat/redhat-hardened-ld -specs=/usr/lib/rpm/redhat/redhat-annobin-cc1 "
