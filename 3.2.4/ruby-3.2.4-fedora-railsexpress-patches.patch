@@ -1,0 +1,1330 @@
+diff -Nuarp ruby-3.2.4.a/abrt.c ruby-3.2.4.b/abrt.c
+--- ruby-3.2.4.a/abrt.c	1969-12-31 19:00:00.000000000 -0500
++++ ruby-3.2.4.b/abrt.c	2024-05-10 00:02:13.646934698 -0400
+@@ -0,0 +1,12 @@
++#include "internal.h"
++
++void
++Init_abrt(void)
++{
++  rb_eval_string(
++    "  begin\n"
++    "    require 'abrt'\n"
++    "  rescue LoadError\n"
++    "  end\n"
++  );
++}
+diff -Nuarp ruby-3.2.4.a/common.mk ruby-3.2.4.b/common.mk
+--- ruby-3.2.4.a/common.mk	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/common.mk	2024-05-10 00:02:29.578378341 -0400
+@@ -86,7 +86,8 @@ ENC_MK        = enc.mk
+ MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
+ 		RUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BOOTSTRAPRUBY)" $(mflags)
+ 
+-COMMONOBJS    = array.$(OBJEXT) \
++COMMONOBJS    = abrt.$(OBJEXT) \
++                array.$(OBJEXT) \
+ 		ast.$(OBJEXT) \
+ 		bignum.$(OBJEXT) \
+ 		class.$(OBJEXT) \
+@@ -766,7 +767,7 @@ clean-spec: PHONY
+ 	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || $(NULLCMD)
+ 	-$(Q) $(RMALL) rubyspec_temp
+ 
+-check: main $(DOT_WAIT) test $(DOT_WAIT) test-tool $(DOT_WAIT) test-all
++check: main $(DOT_WAIT) test $(DOT_WAIT) test-tool $(DOT_WAIT) test-all $(DOT_WAIT) test-spec
+ 	$(ECHO) check succeeded
+ 	-$(Q) : : "run only on sh"; \
+ 	if [ x"$(GIT)" != x ] && $(CHDIR) "$(srcdir)" && \
+@@ -903,8 +904,6 @@ yes-test-spec: test-spec-precheck
+ 	$(ACTIONS_ENDGROUP)
+ no-test-spec:
+ 
+-check: $(DOT_WAIT) test-spec
+-
+ RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
+ runnable: $(RUNNABLE) prog $(tooldir)/mkrunnable.rb PHONY
+ 	$(Q) $(MINIRUBY) $(tooldir)/mkrunnable.rb -v $(EXTOUT)
+@@ -1456,7 +1455,6 @@ test-syntax-suggest-precheck: $(TEST_RUN
+ no-test-syntax-suggest-precheck:
+ yes-test-syntax-suggest-precheck: main
+ 
+-test-syntax-suggest-prepare: $(TEST_RUNNABLE)-test-syntax-suggest-prepare
+ no-test-syntax-suggest-prepare: no-test-syntax-suggest-precheck
+ yes-test-syntax-suggest-prepare: yes-test-syntax-suggest-precheck
+ 	$(ACTIONS_GROUP)
+@@ -1466,15 +1464,12 @@ yes-test-syntax-suggest-prepare: yes-tes
+ 
+ RSPECOPTS =
+ SYNTAX_SUGGEST_SPECS =
+-PREPARE_SYNTAX_SUGGEST = test-syntax-suggest-prepare
+ test-syntax-suggest: $(TEST_RUNNABLE)-test-syntax-suggest
+-yes-test-syntax-suggest: yes-$(PREPARE_SYNTAX_SUGGEST)
++yes-test-syntax-suggest: yes-test-syntax-suggest-prepare
+ 	$(XRUBY) -C $(srcdir) -Ispec/syntax_suggest .bundle/bin/rspec \
+ 		--require spec_helper $(RSPECOPTS) spec/syntax_suggest/$(SYNTAX_SUGGEST_SPECS)
+ no-test-syntax-suggest:
+ 
+-check: $(DOT_WAIT) $(TEST_RUNNABLE)-$(PREPARE_SYNTAX_SUGGEST) test-syntax-suggest
+-
+ test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
+ no-test-bundler-precheck:
+ yes-test-bundler-precheck: main $(arch)-fake.rb
+diff -Nuarp ruby-3.2.4.a/configure.ac ruby-3.2.4.b/configure.ac
+--- ruby-3.2.4.a/configure.ac	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/configure.ac	2024-05-10 00:02:36.917122057 -0400
+@@ -124,7 +124,7 @@ RUBY_BASE_NAME=`echo ruby | sed "$progra
+ RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
+ AC_SUBST(RUBY_BASE_NAME)
+ AC_SUBST(RUBYW_BASE_NAME)
+-AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version}')
++AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version_dir_name}')
+ 
+ dnl checks for alternative programs
+ AC_CANONICAL_BUILD
+@@ -2084,6 +2084,7 @@ AC_CHECK_FUNCS(lstat)
+ AC_CHECK_FUNCS(lutimes)
+ AC_CHECK_FUNCS(malloc_usable_size)
+ AC_CHECK_FUNCS(malloc_size)
++AC_CHECK_FUNCS(malloc_trim)
+ AC_CHECK_FUNCS(mblen)
+ AC_CHECK_FUNCS(memalign)
+ AC_CHECK_FUNCS(memset_s)
+@@ -3417,6 +3418,11 @@ AS_IF([test ${multiarch+set}], [
+ ])
+ 
+ archlibdir='${libdir}/${arch}'
++AC_ARG_WITH(archlibdir,
++	    AS_HELP_STRING([--with-archlibdir=DIR],
++			   [prefix for libruby [[LIBDIR/ARCH]]]),
++	    [archlibdir="$withval"])
++
+ sitearchlibdir='${libdir}/${sitearch}'
+ archincludedir='${includedir}/${arch}'
+ sitearchincludedir='${includedir}/${sitearch}'
+@@ -4152,9 +4158,6 @@ AS_CASE(["$target_os"],
+     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
+     ])
+ 
+-rubylibdir='${rubylibprefix}/${ruby_version}'
+-rubyarchdir=${multiarch+'${rubyarchprefix}/${ruby_version}'}${multiarch-'${rubylibdir}/${arch}'}
+-
+ rubyarchprefix=${multiarch+'${archlibdir}/${RUBY_BASE_NAME}'}${multiarch-'${rubylibprefix}/${arch}'}
+ AC_ARG_WITH(rubyarchprefix,
+ 	    AS_HELP_STRING([--with-rubyarchprefix=DIR],
+@@ -4177,57 +4180,68 @@ AC_ARG_WITH(ridir,
+ AC_SUBST(ridir)
+ AC_SUBST(RI_BASE_NAME)
+ 
+-AC_ARG_WITH(ruby-version,
+-	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|minor|STR)]),
+-            [ruby_version=$withval],
+-            [ruby_version=full])
+ unset RUBY_LIB_VERSION
+-unset RUBY_LIB_VERSION_STYLE
+-AS_CASE(["$ruby_version"],
+-  [full],  [RUBY_LIB_VERSION_STYLE='3	/* full */'],
+-  [minor], [RUBY_LIB_VERSION_STYLE='2	/* minor */'])
+-AS_IF([test ${RUBY_LIB_VERSION_STYLE+set}], [
+-    {
+-    echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
+-    echo '@%:@include "confdefs.h"'
+-    echo '#define STRINGIZE(x) x'
+-    test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
+-    echo '#include "version.h"'
+-    echo 'ruby_version=RUBY_LIB_VERSION'
+-    } > conftest.c
+-    ruby_version="`$CPP -I. -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
+-    eval $ruby_version
+-], [test -z "${ruby_version}"], [
+-    AC_MSG_ERROR([No ruby version, No place for bundled libraries])
+-], [
+-    RUBY_LIB_VERSION="${ruby_version}"
+-])
++RUBY_LIB_VERSION_STYLE='3	/* full */'
++{
++echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
++echo '@%:@include "confdefs.h"'
++echo '#define STRINGIZE(x) x'
++test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
++echo '#include "version.h"'
++echo 'ruby_version=RUBY_LIB_VERSION'
++} > conftest.c
++ruby_version="`$CPP -I. -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
++eval $ruby_version
++
++RUBY_LIB_VERSION="${ruby_version}"
++
+ AC_SUBST(RUBY_LIB_VERSION_STYLE)
+ AC_SUBST(RUBY_LIB_VERSION)
+ 
++AC_ARG_WITH(ruby-version,
++	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|STR)]),
++            [ruby_version_dir_name=$withval],
++            [ruby_version_dir_name=full])
++AS_CASE(["$ruby_version_dir_name"],
++  [full], [ruby_version_dir_name='${ruby_version}'])
++
++ruby_version_dir=/'${ruby_version_dir_name}'
++
++if test -z "${ruby_version_dir_name}"; then
++    unset ruby_version_dir
++    AC_DEFINE(RUBY_LIB_VERSION_BLANK, 1)
++fi
++
++rubylibdir='${rubylibprefix}'${ruby_version_dir}
++rubyarchdir=${multiarch+'${rubyarchprefix}'${ruby_version_dir}}${multiarch-'${rubylibdir}/${arch}'}
++
+ AC_ARG_WITH(sitedir,
+ 	    AS_HELP_STRING([--with-sitedir=DIR], [site libraries in DIR [[RUBY_LIB_PREFIX/site_ruby]], "no" to disable site directory]),
+             [sitedir=$withval],
+             [sitedir='${rubylibprefix}/site_ruby'])
+-sitelibdir='${sitedir}/${ruby_version}'
++sitelibdir='${sitedir}'${ruby_version_dir}
+ 
+ AC_ARG_WITH(sitearchdir,
+ 	    AS_HELP_STRING([--with-sitearchdir=DIR],
+ 			   [architecture dependent site libraries in DIR [[SITEDIR/SITEARCH]], "no" to disable site directory]),
+             [sitearchdir=$withval],
+-            [sitearchdir=${multiarch+'${rubysitearchprefix}/site_ruby/${ruby_version}'}${multiarch-'${sitelibdir}/${sitearch}'}])
++            [sitearchdir=${multiarch+'${rubysitearchprefix}/site_ruby'${ruby_version_dir}}${multiarch-'${sitelibdir}/${sitearch}'}])
+ 
+ AC_ARG_WITH(vendordir,
+ 	    AS_HELP_STRING([--with-vendordir=DIR], [vendor libraries in DIR [[RUBY_LIB_PREFIX/vendor_ruby]], "no" to disable vendor directory]),
+             [vendordir=$withval],
+             [vendordir='${rubylibprefix}/vendor_ruby'])
+-vendorlibdir='${vendordir}/${ruby_version}'
++vendorlibdir='${vendordir}'${ruby_version_dir}
+ 
+ AC_ARG_WITH(vendorarchdir,
+ 	    AS_HELP_STRING([--with-vendorarchdir=DIR],
+ 			   [architecture dependent vendor libraries in DIR [[VENDORDIR/SITEARCH]], "no" to disable vendor directory]),
+             [vendorarchdir=$withval],
+-            [vendorarchdir=${multiarch+'${rubysitearchprefix}/vendor_ruby/${ruby_version}'}${multiarch-'${vendorlibdir}/${sitearch}'}])
++            [vendorarchdir=${multiarch+'${rubysitearchprefix}/vendor_ruby'${ruby_version_dir}}${multiarch-'${vendorlibdir}/${sitearch}'}])
++
++AC_ARG_WITH(rubygemsdir,
++           AS_HELP_STRING([--with-rubygemsdir=DIR], [custom rubygems directory]),
++            [rubygemsdir=$withval])
+ 
+ AS_IF([test "${LOAD_RELATIVE+set}"], [
+     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
+@@ -4244,6 +4258,7 @@ AC_SUBST(sitearchincludedir)dnl
+ AC_SUBST(arch)dnl
+ AC_SUBST(sitearch)dnl
+ AC_SUBST(ruby_version)dnl
++AC_SUBST(ruby_version_dir_name)dnl
+ AC_SUBST(rubylibdir)dnl
+ AC_SUBST(rubyarchdir)dnl
+ AC_SUBST(sitedir)dnl
+@@ -4252,10 +4267,13 @@ AC_SUBST(sitearchdir)dnl
+ AC_SUBST(vendordir)dnl
+ AC_SUBST(vendorlibdir)dnl
+ AC_SUBST(vendorarchdir)dnl
++AC_SUBST(rubygemsdir)dnl
+ 
+ AC_SUBST(CONFIGURE, "`echo $0 | sed 's|.*/||'`")dnl
+ AC_SUBST(configure_args, "`echo "${ac_configure_args}" | sed 's/\\$/$$/g'`")dnl
+ 
++target_cpu=`echo $target_cpu | sed s/i.86/i386/`
++
+ AS_IF([test "${universal_binary-no}" = yes ], [
+     arch="universal-${target_os}"
+     AS_IF([test "${rb_cv_architecture_available}" = yes], [
+diff -Nuarp ruby-3.2.4.a/defs/gmake.mk ruby-3.2.4.b/defs/gmake.mk
+--- ruby-3.2.4.a/defs/gmake.mk	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/defs/gmake.mk	2024-05-10 00:02:29.579378306 -0400
+@@ -27,7 +27,7 @@ TEST_DEPENDS := $(filter-out commit $(TE
+ TEST_TARGETS := $(patsubst great,exam,$(TEST_TARGETS))
+ TEST_DEPENDS := $(filter-out great $(TEST_TARGETS),$(TEST_DEPENDS))
+ TEST_TARGETS := $(patsubst exam,check,$(TEST_TARGETS))
+-TEST_TARGETS := $(patsubst check,test-syntax-suggest test-spec test-all test-tool test-short,$(TEST_TARGETS))
++TEST_TARGETS := $(patsubst check,test-spec test-all test-tool test-short,$(TEST_TARGETS))
+ TEST_TARGETS := $(patsubst test-rubyspec,test-spec,$(TEST_TARGETS))
+ TEST_DEPENDS := $(filter-out exam check test-spec $(TEST_TARGETS),$(TEST_DEPENDS))
+ TEST_TARGETS := $(patsubst love,check,$(TEST_TARGETS))
+@@ -40,7 +40,6 @@ TEST_TARGETS := $(patsubst test-short,bt
+ TEST_TARGETS := $(patsubst test-bundled-gems,test-bundled-gems-run,$(TEST_TARGETS))
+ TEST_TARGETS := $(patsubst test-bundled-gems-run,test-bundled-gems-run $(PREPARE_BUNDLED_GEMS),$(TEST_TARGETS))
+ TEST_TARGETS := $(patsubst test-bundled-gems-prepare,test-bundled-gems-prepare $(PRECHECK_BUNDLED_GEMS) test-bundled-gems-fetch,$(TEST_TARGETS))
+-TEST_TARGETS := $(patsubst test-syntax-suggest,test-syntax-suggest $(PREPARE_SYNTAX_SUGGEST),$(TEST_TARGETS))
+ TEST_DEPENDS := $(filter-out test-short $(TEST_TARGETS),$(TEST_DEPENDS))
+ TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
+ endif
+@@ -84,8 +83,7 @@ endif
+ ORDERED_TEST_TARGETS := $(filter $(TEST_TARGETS), \
+ 	btest-ruby test-knownbug test-basic \
+ 	test-testframework test-tool test-ruby test-all \
+-	test-spec test-syntax-suggest-prepare test-syntax-suggest \
+-	test-bundler-prepare test-bundler test-bundler-parallel \
++	test-spec test-bundler-prepare test-bundler test-bundler-parallel \
+ 	test-bundled-gems-precheck test-bundled-gems-fetch \
+ 	test-bundled-gems-prepare test-bundled-gems-run \
+ 	)
+diff -Nuarp ruby-3.2.4.a/gc.c ruby-3.2.4.b/gc.c
+--- ruby-3.2.4.a/gc.c	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/gc.c	2024-05-10 00:02:36.919121987 -0400
+@@ -314,6 +314,9 @@ rb_gc_guarded_ptr_val(volatile VALUE *pt
+ #ifndef GC_MALLOC_LIMIT_GROWTH_FACTOR
+ #define GC_MALLOC_LIMIT_GROWTH_FACTOR 1.4
+ #endif
++#ifndef GC_MALLOC_TRIM_FREQUENCY
++#define GC_MALLOC_TRIM_FREQUENCY 0
++#endif
+ 
+ #ifndef GC_OLDMALLOC_LIMIT_MIN
+ #define GC_OLDMALLOC_LIMIT_MIN (16 * 1024 * 1024 /* 16MB */)
+@@ -352,6 +355,7 @@ typedef struct {
+     size_t malloc_limit_min;
+     size_t malloc_limit_max;
+     double malloc_limit_growth_factor;
++    size_t malloc_trim_frequency;
+ 
+     size_t oldmalloc_limit_min;
+     size_t oldmalloc_limit_max;
+@@ -374,6 +378,7 @@ static ruby_gc_params_t gc_params = {
+     GC_MALLOC_LIMIT_MIN,
+     GC_MALLOC_LIMIT_MAX,
+     GC_MALLOC_LIMIT_GROWTH_FACTOR,
++    GC_MALLOC_TRIM_FREQUENCY,
+ 
+     GC_OLDMALLOC_LIMIT_MIN,
+     GC_OLDMALLOC_LIMIT_MAX,
+@@ -753,6 +758,8 @@ typedef struct rb_objspace {
+         unsigned int during_incremental_marking : 1;
+ #endif
+         unsigned int measure_gc : 1;
++        unsigned int collect_gc_stats : 1;
++        unsigned int verbose_gc_stats : 1;
+     } flags;
+ 
+     rb_event_flag_t hook_events;
+@@ -820,12 +827,17 @@ typedef struct rb_objspace {
+ 
+         /* temporary profiling space */
+         double gc_sweep_start_time;
++        double gc_mark_start_time;
+         size_t total_allocated_objects_at_gc_start;
+         size_t heap_used_at_gc_start;
+ 
+         /* basic statistics */
+         size_t count;
++        double time;
+         size_t total_freed_objects;
++        size_t total_mallocs;
++        size_t total_malloced_bytes;
++        size_t live_after_last_sweep;
+         uint64_t total_time_ns;
+         struct timespec start_time;
+     } profile;
+@@ -1033,6 +1045,7 @@ VALUE *ruby_initial_gc_stress_ptr = &rub
+ #define heap_pages_deferred_final	objspace->heap_pages.deferred_final
+ #define size_pools              objspace->size_pools
+ #define during_gc		objspace->flags.during_gc
++#define collect_gc_stats        objspace->flags.collect_gc_stats
+ #define finalizing		objspace->atomic_flags.finalizing
+ #define finalizer_table 	objspace->finalizer_table
+ #define global_list		objspace->global_list
+@@ -9121,6 +9134,107 @@ rb_gc_writebarrier_remember(VALUE obj)
+ 
+ static st_table *rgengc_unprotect_logging_table;
+ 
++VALUE
++rb_gc_enable_stats(void)
++{
++    rb_objspace_t *objspace = &rb_objspace;
++    int old = collect_gc_stats;
++    collect_gc_stats = 1;
++    return old ? Qtrue : Qfalse;
++}
++
++static VALUE
++gc_enable_stats(rb_execution_context_t *ec, VALUE _)
++{
++    return rb_gc_enable_stats();
++}
++
++VALUE
++rb_gc_disable_stats(void)
++{
++    rb_objspace_t *objspace = &rb_objspace;
++    int old = collect_gc_stats;
++    collect_gc_stats = 0;
++    return old ? Qtrue : Qfalse;
++}
++
++static VALUE
++gc_disable_stats(rb_execution_context_t *ec, VALUE _)
++{
++    return rb_gc_disable_stats();
++}
++
++
++VALUE
++rb_gc_stats_enabled(void)
++{
++    rb_objspace_t *objspace = &rb_objspace;
++    return collect_gc_stats ? Qtrue : Qfalse;
++}
++
++static VALUE
++gc_stats_enabled(rb_execution_context_t *ec, VALUE _)
++{
++    return rb_gc_stats_enabled();
++}
++
++double rb_gc_total_time(void)
++{
++    return rb_objspace.profile.time;
++}
++
++static VALUE
++gc_time(rb_execution_context_t *ec, VALUE _)
++{
++    return DBL2NUM(1000000*rb_objspace.profile.time);
++}
++
++VALUE
++rb_gc_heap_slots(void)
++{
++    rb_objspace_t *objspace = &rb_objspace;
++    return SIZET2NUM(heap_allocated_pages * HEAP_PAGE_OBJ_LIMIT);
++}
++
++static
++VALUE gc_heap_slots(rb_execution_context_t *ec, VALUE _)
++{
++    return rb_gc_heap_slots();
++}
++
++VALUE
++rb_gc_heap_slots_live_after_last_gc(void)
++{
++    rb_objspace_t *objspace = &rb_objspace;
++    return SIZET2NUM(objspace->profile.live_after_last_sweep);
++}
++
++static
++VALUE gc_heap_slots_live_after_last_gc(rb_execution_context_t *ec, VALUE _)
++{
++    return rb_gc_heap_slots_live_after_last_gc();
++}
++
++size_t rb_gc_total_mallocs(void) {
++    return rb_objspace.profile.total_mallocs;
++}
++
++static VALUE
++gc_total_mallocs(rb_execution_context_t *ec, VALUE _)
++{
++    return SIZET2NUM(rb_objspace.profile.total_mallocs);
++}
++
++size_t rb_gc_total_malloced_bytes(void) {
++    return rb_objspace.profile.total_malloced_bytes;
++}
++
++static VALUE
++gc_total_malloced_bytes(rb_execution_context_t *ec, VALUE _)
++{
++    return SIZET2NUM(rb_objspace.profile.total_malloced_bytes);
++}
++
+ static int
+ rgengc_unprotect_logging_exit_func_i(st_data_t key, st_data_t val, st_data_t arg)
+ {
+@@ -9559,6 +9673,16 @@ gc_start(rb_objspace_t *objspace, unsign
+     gc_prof_timer_start(objspace);
+     {
+         gc_marks(objspace, do_full_mark);
++#ifdef HAVE_MALLOC_TRIM
++        /* [Experimental] Explicitly free all eligible pages to the kernel.  See:
++         *
++         * - https://www.joyfulbikeshedding.com/blog/2019-03-14-what-causes-ruby-memory-bloat.html
++         * - https://bugs.ruby-lang.org/issues/15667
++         */
++        size_t gc_count = rb_objspace.profile.major_gc_count;
++        if (do_full_mark && gc_params.malloc_trim_frequency && gc_count % gc_params.malloc_trim_frequency == 0)
++            malloc_trim(0);
++#endif
+     }
+     gc_prof_timer_stop(objspace);
+ 
+@@ -11863,6 +11987,7 @@ ruby_gc_set_params(void)
+     get_envparam_size  ("RUBY_GC_OLDMALLOC_LIMIT_MAX", &gc_params.oldmalloc_limit_max, 0);
+     get_envparam_double("RUBY_GC_OLDMALLOC_LIMIT_GROWTH_FACTOR", &gc_params.oldmalloc_limit_growth_factor, 1.0, 0.0, FALSE);
+ #endif
++    get_envparam_size  ("RUBY_GC_MALLOC_TRIM_FREQUENCY", &gc_params.malloc_trim_frequency, 0);
+ }
+ 
+ static void
+@@ -12158,6 +12283,10 @@ objspace_malloc_increase_body(rb_objspac
+ {
+     if (new_size > old_size) {
+         ATOMIC_SIZE_ADD(malloc_increase, new_size - old_size);
++        if (collect_gc_stats) {
++            ATOMIC_SIZE_ADD(objspace->profile.total_mallocs, 1);
++            ATOMIC_SIZE_ADD(objspace->profile.total_malloced_bytes, new_size - old_size);
++        }
+ #if RGENGC_ESTIMATE_OLDMALLOC
+         ATOMIC_SIZE_ADD(objspace->rgengc.oldmalloc_increase, new_size - old_size);
+ #endif
+@@ -12805,6 +12934,12 @@ gc_malloc_allocated_size(VALUE self)
+     return UINT2NUM(rb_objspace.malloc_params.allocated_size);
+ }
+ 
++size_t
++rb_gc_malloc_allocated_size(void)
++{
++    return rb_objspace.malloc_params.allocated_size;
++}
++
+ /*
+  *  call-seq:
+  *     GC.malloc_allocations -> Integer
+@@ -12819,6 +12954,12 @@ gc_malloc_allocations(VALUE self)
+ {
+     return UINT2NUM(rb_objspace.malloc_params.allocations);
+ }
++
++size_t
++rb_gc_malloc_allocations(void)
++{
++    return rb_objspace.malloc_params.allocations;
++}
+ #endif
+ 
+ void
+@@ -13557,6 +13698,14 @@ gc_prof_mark_timer_start(rb_objspace_t *
+ #if GC_PROFILE_MORE_DETAIL
+     if (gc_prof_enabled(objspace)) {
+         gc_prof_record(objspace)->gc_mark_time = getrusage_time();
++    } else {
++        if (collect_gc_stats) {
++          objspace->profile.gc_mark_start_time = getrusage_time();
++        }
++    }
++#else
++    if (collect_gc_stats) {
++        objspace->profile.gc_mark_start_time = getrusage_time();
+     }
+ #endif
+ }
+@@ -13569,6 +13718,17 @@ gc_prof_mark_timer_stop(rb_objspace_t *o
+     if (gc_prof_enabled(objspace)) {
+         gc_profile_record *record = gc_prof_record(objspace);
+         record->gc_mark_time = elapsed_time_from(record->gc_mark_time);
++        if (collect_gc_stats) {
++            objspace->profile.time += record->gc_mark_time;
++        }
++    } else {
++        if (collect_gc_stats) {
++            objspace->profile.time += elapsed_time_from(objspace->profile.gc_mark_start_time);
++        }
++    }
++#else
++    if (collect_gc_stats) {
++        objspace->profile.time += elapsed_time_from(objspace->profile.gc_mark_start_time);
+     }
+ #endif
+ }
+@@ -13580,7 +13740,11 @@ gc_prof_sweep_timer_start(rb_objspace_t
+     if (gc_prof_enabled(objspace)) {
+         gc_profile_record *record = gc_prof_record(objspace);
+ 
+-        if (record->gc_time > 0 || GC_PROFILE_MORE_DETAIL) {
++        if (record->gc_time > 0 || GC_PROFILE_MORE_DETAIL || collect_gc_stats) {
++            objspace->profile.gc_sweep_start_time = getrusage_time();
++        }
++    } else {
++        if (collect_gc_stats) {
+             objspace->profile.gc_sweep_start_time = getrusage_time();
+         }
+     }
+@@ -13599,9 +13763,19 @@ gc_prof_sweep_timer_stop(rb_objspace_t *
+             sweep_time = elapsed_time_from(objspace->profile.gc_sweep_start_time);
+             /* need to accumulate GC time for lazy sweep after gc() */
+             record->gc_time += sweep_time;
++            if (collect_gc_stats) {
++                objspace->profile.time += sweep_time;
++            }
+         }
+         else if (GC_PROFILE_MORE_DETAIL) {
+             sweep_time = elapsed_time_from(objspace->profile.gc_sweep_start_time);
++            if (collect_gc_stats) {
++		objspace->profile.time += sweep_time;
++	    }
++	} else {
++	    if (collect_gc_stats) {
++		objspace->profile.time += elapsed_time_from(objspace->profile.gc_sweep_start_time);
++	    }
+         }
+ 
+ #if GC_PROFILE_MORE_DETAIL
+@@ -13609,6 +13783,10 @@ gc_prof_sweep_timer_stop(rb_objspace_t *
+         if (heap_pages_deferred_final) record->flags |= GPR_FLAG_HAVE_FINALIZE;
+ #endif
+         if (heap_pages_deferred_final) objspace->profile.latest_gc_info |= GPR_FLAG_HAVE_FINALIZE;
++    } else {
++        if (collect_gc_stats) {
++            objspace->profile.time += elapsed_time_from(objspace->profile.gc_sweep_start_time);
++        }
+     }
+ }
+ 
+@@ -13627,9 +13805,13 @@ gc_prof_set_malloc_info(rb_objspace_t *o
+ static inline void
+ gc_prof_set_heap_info(rb_objspace_t *objspace)
+ {
++    if (objspace->profile.total_allocated_objects_at_gc_start > objspace->profile.total_freed_objects)
++	objspace->profile.live_after_last_sweep =
++	    objspace->profile.total_allocated_objects_at_gc_start - objspace->profile.total_freed_objects;
++
+     if (gc_prof_enabled(objspace)) {
+         gc_profile_record *record = gc_prof_record(objspace);
+-        size_t live = objspace->profile.total_allocated_objects_at_gc_start - objspace->profile.total_freed_objects;
++        size_t live = objspace->profile.live_after_last_sweep;
+         size_t total = objspace->profile.heap_used_at_gc_start * HEAP_PAGE_OBJ_LIMIT;
+ 
+ #if GC_PROFILE_MORE_DETAIL
+diff -Nuarp ruby-3.2.4.a/gc.rb ruby-3.2.4.b/gc.rb
+--- ruby-3.2.4.a/gc.rb	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/gc.rb	2024-05-10 00:02:33.284248925 -0400
+@@ -285,6 +285,92 @@ module GC
+       ULL2NUM(rb_objspace.profile.total_time_ns)
+     }
+   end
++
++  # call-seq:
++  #    GC.enable_stats	  => true or false
++  #
++  # Enables garbage collection statistics, returning <code>true</code> if garbage
++  # collection statistics was already enabled.
++  #
++  #    GC.enable_stats	 #=> false or true
++  #    GC.enable_stats	 #=> true
++  def self.enable_stats
++    Primitive.gc_enable_stats
++  end
++
++  #   call-seq:
++  #    GC.disable_stats	   => true or false
++  #
++  # Disables garbage collection statistics, returning <code>true</code> if garbage
++  # collection statistics was already disabled.
++  #
++  #    GC.disable_stats	  #=> false or true
++  #    GC.disable_stats	  #=> true
++  def self.disable_stats
++    Primitive.gc_disable_stats
++  end
++
++  # call-seq:
++  #    GC.stats_enabled?    => true or false
++  #
++  # Check whether GC stats have been enabled.
++  #
++  #    GC.stats_enabled?   #=> false or true
++  def self.stats_enabled?
++    Primitive.gc_stats_enabled
++  end
++
++  #   call-seq:
++  #    GC.time	  => Integer
++  #
++  # Returns the time spent during garbage collection while GC statistics collection
++  # was enabled (in micro seconds).
++  #
++  #    GC.time	  #=> 20000
++  def self.time
++    Primitive.gc_time
++  end
++
++  #  call-seq:
++  #	GC.heap_slots	=> Integer
++  #
++  #  Returns the number of heap slots available for object allocations.
++  #
++  #	GC.heap_slots	#=> 10000
++  def self.heap_slots
++    Primitive.gc_heap_slots
++  end
++
++  # call-seq:
++  #    GC.heap_slots_live_after_last_gc	   => Integer
++  #
++  # Returns the number of heap slots which were live after the last garbage collection.
++  #
++  #    GC.heap_slots_live_after_last_gc	   #=> 231223
++  def self.heap_slots_live_after_last_gc
++    Primitive.gc_heap_slots_live_after_last_gc
++  end
++
++  #   call-seq:
++  #	 GC.total_mallocs	   => Integer
++  #
++  #   Returns the number malloc calls. Might wrap around.
++  #
++  #	 GC.total_mallocs	   #=> 324234323246
++  def self.total_mallocs
++    Primitive.gc_total_mallocs
++  end
++
++  #   call-seq:
++  #	 GC.total_malloced_bytes	   => Integer
++  #
++  #   Returns the number of bytes allocated. Might wrap around.
++  #
++  #	 GC.total_malloced_bytes	   #=> 354656256432446
++  def self.total_malloced_bytes
++    Primitive.gc_total_malloced_bytes
++  end
++
+ end
+ 
+ module ObjectSpace
+diff -Nuarp ruby-3.2.4.a/gc.rbinc ruby-3.2.4.b/gc.rbinc
+--- ruby-3.2.4.a/gc.rbinc	2024-04-23 06:20:11.000000000 -0400
++++ ruby-3.2.4.b/gc.rbinc	2024-05-10 00:02:45.042838289 -0400
+@@ -226,6 +226,78 @@ mjit_compile_invokebuiltin_for__bi2(VALU
+     rb_str_catf(buf, "    val = f(ec, self);\n");
+ }
+ 
++static void
++mjit_compile_invokebuiltin_for_gc_enable_stats(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
++{
++    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
++    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
++    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_enable_stats */\n", (VALUE)gc_enable_stats);
++    rb_str_catf(buf, "    val = f(ec, self);\n");
++}
++
++static void
++mjit_compile_invokebuiltin_for_gc_disable_stats(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
++{
++    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
++    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
++    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_disable_stats */\n", (VALUE)gc_disable_stats);
++    rb_str_catf(buf, "    val = f(ec, self);\n");
++}
++
++static void
++mjit_compile_invokebuiltin_for_gc_stats_enabled(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
++{
++    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
++    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
++    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_stats_enabled */\n", (VALUE)gc_stats_enabled);
++    rb_str_catf(buf, "    val = f(ec, self);\n");
++}
++
++static void
++mjit_compile_invokebuiltin_for_gc_time(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
++{
++    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
++    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
++    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_time */\n", (VALUE)gc_time);
++    rb_str_catf(buf, "    val = f(ec, self);\n");
++}
++
++static void
++mjit_compile_invokebuiltin_for_gc_heap_slots(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
++{
++    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
++    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
++    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_heap_slots */\n", (VALUE)gc_heap_slots);
++    rb_str_catf(buf, "    val = f(ec, self);\n");
++}
++
++static void
++mjit_compile_invokebuiltin_for_gc_heap_slots_live_after_last_gc(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
++{
++    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
++    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
++    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_heap_slots_live_after_last_gc */\n", (VALUE)gc_heap_slots_live_after_last_gc);
++    rb_str_catf(buf, "    val = f(ec, self);\n");
++}
++
++static void
++mjit_compile_invokebuiltin_for_gc_total_mallocs(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
++{
++    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
++    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
++    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_total_mallocs */\n", (VALUE)gc_total_mallocs);
++    rb_str_catf(buf, "    val = f(ec, self);\n");
++}
++
++static void
++mjit_compile_invokebuiltin_for_gc_total_malloced_bytes(VALUE buf, long index, unsigned stack_size, bool inlinable_p)
++{
++    rb_str_catf(buf, "    VALUE self = GET_SELF();\n");
++    rb_str_catf(buf, "    typedef VALUE (*func)(rb_execution_context_t *, VALUE);\n");
++    rb_str_catf(buf, "    func f = (func)%"PRIuVALUE"; /* == gc_total_malloced_bytes */\n", (VALUE)gc_total_malloced_bytes);
++    rb_str_catf(buf, "    val = f(ec, self);\n");
++}
++
+ void Init_builtin_gc(void)
+ {
+   // table definition
+@@ -243,6 +315,14 @@ void Init_builtin_gc(void)
+     RB_BUILTIN_FUNCTION(10, _bi0, builtin_inline_class_262, 0, mjit_compile_invokebuiltin_for__bi0),
+     RB_BUILTIN_FUNCTION(11, _bi1, builtin_inline_class_274, 0, mjit_compile_invokebuiltin_for__bi1),
+     RB_BUILTIN_FUNCTION(12, _bi2, builtin_inline_class_284, 0, mjit_compile_invokebuiltin_for__bi2),
++    RB_BUILTIN_FUNCTION(13, gc_enable_stats, gc_enable_stats, 0, mjit_compile_invokebuiltin_for_gc_enable_stats),
++    RB_BUILTIN_FUNCTION(14, gc_disable_stats, gc_disable_stats, 0, mjit_compile_invokebuiltin_for_gc_disable_stats),
++    RB_BUILTIN_FUNCTION(15, gc_stats_enabled, gc_stats_enabled, 0, mjit_compile_invokebuiltin_for_gc_stats_enabled),
++    RB_BUILTIN_FUNCTION(16, gc_time, gc_time, 0, mjit_compile_invokebuiltin_for_gc_time),
++    RB_BUILTIN_FUNCTION(17, gc_heap_slots, gc_heap_slots, 0, mjit_compile_invokebuiltin_for_gc_heap_slots),
++    RB_BUILTIN_FUNCTION(18, gc_heap_slots_live_after_last_gc, gc_heap_slots_live_after_last_gc, 0, mjit_compile_invokebuiltin_for_gc_heap_slots_live_after_last_gc),
++    RB_BUILTIN_FUNCTION(19, gc_total_mallocs, gc_total_mallocs, 0, mjit_compile_invokebuiltin_for_gc_total_mallocs),
++    RB_BUILTIN_FUNCTION(20, gc_total_malloced_bytes, gc_total_malloced_bytes, 0, mjit_compile_invokebuiltin_for_gc_total_malloced_bytes),
+     RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0, 0),
+   };
+ 
+@@ -264,6 +344,14 @@ COMPILER_WARNING_ERROR(-Wincompatible-po
+   if (0) rb_builtin_function_check_arity0(builtin_inline_class_262);
+   if (0) rb_builtin_function_check_arity0(builtin_inline_class_274);
+   if (0) rb_builtin_function_check_arity0(builtin_inline_class_284);
++  if (0) rb_builtin_function_check_arity0(gc_enable_stats);
++  if (0) rb_builtin_function_check_arity0(gc_disable_stats);
++  if (0) rb_builtin_function_check_arity0(gc_stats_enabled);
++  if (0) rb_builtin_function_check_arity0(gc_time);
++  if (0) rb_builtin_function_check_arity0(gc_heap_slots);
++  if (0) rb_builtin_function_check_arity0(gc_heap_slots_live_after_last_gc);
++  if (0) rb_builtin_function_check_arity0(gc_total_mallocs);
++  if (0) rb_builtin_function_check_arity0(gc_total_malloced_bytes);
+ COMPILER_WARNING_POP
+ 
+   // load
+diff -Nuarp ruby-3.2.4.a/include/ruby/internal/intern/gc.h ruby-3.2.4.b/include/ruby/internal/intern/gc.h
+--- ruby-3.2.4.a/include/ruby/internal/intern/gc.h	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/include/ruby/internal/intern/gc.h	2024-05-10 00:02:33.284248925 -0400
+@@ -387,6 +387,15 @@ VALUE rb_gc_latest_gc_info(VALUE key_or_
+  */
+ void rb_gc_adjust_memory_usage(ssize_t diff);
+ 
++VALUE rb_gc_enable_stats(void);
++VALUE rb_gc_disable_stats(void);
++VALUE rb_gc_stats_enabled(void);
++double rb_gc_total_time(void);
++VALUE rb_gc_heap_slots(void);
++VALUE rb_gc_heap_slots_live_after_last_gc(void);
++size_t rb_gc_total_mallocs(void);
++size_t rb_gc_total_malloced_bytes(void);
++
+ RBIMPL_SYMBOL_EXPORT_END()
+ 
+ #endif /* RBIMPL_INTERN_GC_H */
+diff -Nuarp ruby-3.2.4.a/lib/rdoc/ri/paths.rb ruby-3.2.4.b/lib/rdoc/ri/paths.rb
+--- ruby-3.2.4.a/lib/rdoc/ri/paths.rb	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/lib/rdoc/ri/paths.rb	2024-05-10 00:01:54.365608041 -0400
+@@ -10,7 +10,7 @@ module RDoc::RI::Paths
+   #:stopdoc:
+   require 'rbconfig'
+ 
+-  version = RbConfig::CONFIG['ruby_version']
++  version = RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
+ 
+   BASE    = File.join RbConfig::CONFIG['ridir'], version
+ 
+diff -Nuarp ruby-3.2.4.a/lib/rubygems/defaults.rb ruby-3.2.4.b/lib/rubygems/defaults.rb
+--- ruby-3.2.4.a/lib/rubygems/defaults.rb	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/lib/rubygems/defaults.rb	2024-05-10 00:01:54.366608006 -0400
+@@ -35,7 +35,7 @@ module Gem
+   # specified in the environment
+ 
+   def self.default_dir
+-    @default_dir ||= File.join(RbConfig::CONFIG["rubylibprefix"], "gems", RbConfig::CONFIG["ruby_version"])
++    @default_dir ||= File.join(RbConfig::CONFIG["rubylibprefix"], "gems", RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"])
+   end
+ 
+   ##
+@@ -104,7 +104,8 @@ module Gem
+     gem_dir = File.join(Gem.user_home, ".gem")
+     gem_dir = File.join(Gem.data_home, "gem") unless File.exist?(gem_dir)
+     parts = [gem_dir, ruby_engine]
+-    parts << RbConfig::CONFIG["ruby_version"] unless RbConfig::CONFIG["ruby_version"].empty?
++    ruby_version_dir_name = RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"]
++    parts << ruby_version_dir_name unless ruby_version_dir_name.empty?
+     File.join parts
+   end
+ 
+@@ -249,7 +250,7 @@ module Gem
+     return nil unless RbConfig::CONFIG.key? "vendordir"
+ 
+     File.join RbConfig::CONFIG["vendordir"], "gems",
+-              RbConfig::CONFIG["ruby_version"]
++              RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"]
+   end
+ 
+   ##
+diff -Nuarp ruby-3.2.4.a/loadpath.c ruby-3.2.4.b/loadpath.c
+--- ruby-3.2.4.a/loadpath.c	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/loadpath.c	2024-05-10 00:02:09.720071834 -0400
+@@ -65,22 +65,38 @@ const char ruby_initial_load_paths[] =
+     RUBY_SEARCH_PATH "\0"
+ #endif
+ #ifndef NO_RUBY_SITE_LIB
++#ifdef RUBY_LIB_VERSION_BLANK
++    RUBY_SITE_LIB "\0"
++#else
+     RUBY_SITE_LIB2 "\0"
++#endif
+ #ifdef RUBY_THINARCH
+     RUBY_SITE_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+ #endif
+     RUBY_SITE_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
++#ifndef RUBY_LIB_VERSION_BLANK
+     RUBY_SITE_LIB "\0"
+ #endif
++#endif
+ 
+ #ifndef NO_RUBY_VENDOR_LIB
++#ifdef RUBY_LIB_VERSION_BLANK
++    RUBY_VENDOR_LIB "\0"
++#else
+     RUBY_VENDOR_LIB2 "\0"
++#endif
+ #ifdef RUBY_THINARCH
+     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+ #endif
+     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
++#ifndef RUBY_LIB_VERSION_BLANK
+     RUBY_VENDOR_LIB "\0"
+ #endif
++#endif
++
++#ifdef RUBYGEMS_DIR
++    RUBYGEMS_DIR "\0"
++#endif
+ 
+     RUBY_LIB "\0"
+ #ifdef RUBY_THINARCH
+diff -Nuarp ruby-3.2.4.a/miniprelude.c ruby-3.2.4.b/miniprelude.c
+--- ruby-3.2.4.a/miniprelude.c	2024-04-23 06:20:11.000000000 -0400
++++ ruby-3.2.4.b/miniprelude.c	2024-05-10 00:02:40.958980906 -0400
+@@ -640,7 +640,9 @@ static const struct {
+     char L0[492]; /* 1..70 */
+     char L70[495]; /* 71..230 */
+     char L230[507]; /* 231..272 */
+-    char L272[455]; /* 273..297 */
++    char L272[489]; /* 273..339 */
++    char L339[506]; /* 340..380 */
++    char L380[39]; /* 381..383 */
+ } prelude_code2 = {
+ #line 1 "gc.rb"
+ ""/* for gc.c */
+@@ -936,6 +938,94 @@ static const struct {
+ "      ULL2NUM(rb_objspace.profile.total_time_ns)\n"
+ "    }\n"
+ "  end\n"
++"\n"
++"\n"/* call-seq: */
++"\n"/*    GC.enable_stats	  => true or false */
++"\n"/*  */
++"\n"/* Enables garbage collection statistics, returning <code>true</code> if garbage */
++"\n"/* collection statistics was already enabled. */
++"\n"/*  */
++"\n"/*    GC.enable_stats	 #=> false or true */
++"\n"/*    GC.enable_stats	 #=> true */
++"  def self.enable_stats\n"
++"    Primitive.gc_enable_stats\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*    GC.disable_stats	   => true or false */
++"\n"/*  */
++"\n"/* Disables garbage collection statistics, returning <code>true</code> if garbage */
++"\n"/* collection statistics was already disabled. */
++"\n"/*  */
++"\n"/*    GC.disable_stats	  #=> false or true */
++"\n"/*    GC.disable_stats	  #=> true */
++"  def self.disable_stats\n"
++"    Primitive.gc_disable_stats\n"
++"  end\n"
++"\n"
++"\n"/* call-seq: */
++"\n"/*    GC.stats_enabled?    => true or false */
++"\n"/*  */
++"\n"/* Check whether GC stats have been enabled. */
++"\n"/*  */
++"\n"/*    GC.stats_enabled?   #=> false or true */
++"  def self.stats_enabled?\n"
++"    Primitive.gc_stats_enabled\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*    GC.time	  => Integer */
++"\n"/*  */
++"\n"/* Returns the time spent during garbage collection while GC statistics collection */
++"\n"/* was enabled (in micro seconds). */
++"\n"/*  */
++"\n"/*    GC.time	  #=> 20000 */
++"  def self.time\n"
++"    Primitive.gc_time\n"
++"  end\n"
++"\n"
++"\n"/*  call-seq: */
++"\n"/* GC.heap_slots	=> Integer */
++"\n"/*  */
++"\n"/*  Returns the number of heap slots available for object allocations. */
++"\n"/*  */
++"\n"/* GC.heap_slots	#=> 10000 */
++,
++#line 340 "gc.rb"
++"  def self.heap_slots\n"
++"    Primitive.gc_heap_slots\n"
++"  end\n"
++"\n"
++"\n"/* call-seq: */
++"\n"/*    GC.heap_slots_live_after_last_gc	   => Integer */
++"\n"/*  */
++"\n"/* Returns the number of heap slots which were live after the last garbage collection. */
++"\n"/*  */
++"\n"/*    GC.heap_slots_live_after_last_gc	   #=> 231223 */
++"  def self.heap_slots_live_after_last_gc\n"
++"    Primitive.gc_heap_slots_live_after_last_gc\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*  GC.total_mallocs	   => Integer */
++"\n"/*  */
++"\n"/*   Returns the number malloc calls. Might wrap around. */
++"\n"/*  */
++"\n"/*  GC.total_mallocs	   #=> 324234323246 */
++"  def self.total_mallocs\n"
++"    Primitive.gc_total_mallocs\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*  GC.total_malloced_bytes	   => Integer */
++"\n"/*  */
++"\n"/*   Returns the number of bytes allocated. Might wrap around. */
++"\n"/*  */
++"\n"/*  GC.total_malloced_bytes	   #=> 354656256432446 */
++"  def self.total_malloced_bytes\n"
++"    Primitive.gc_total_malloced_bytes\n"
++"  end\n"
++"\n"
+ "end\n"
+ "\n"
+ "module ObjectSpace\n"
+@@ -943,9 +1033,11 @@ static const struct {
+ "    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false\n"
+ "  end\n"
+ "\n"
++,
++#line 381 "gc.rb"
+ "  module_function :garbage_collect\n"
+ "end\n"
+-#line 949 "miniprelude.c"
++#line 1041 "miniprelude.c"
+ };
+ 
+ static const char prelude_name3[] = "<internal:numeric>";
+@@ -1370,7 +1462,7 @@ static const struct {
+ "  end\n"
+ "\n"
+ "end\n"
+-#line 1374 "miniprelude.c"
++#line 1466 "miniprelude.c"
+ };
+ 
+ static const char prelude_name4[] = "<internal:io>";
+@@ -1501,7 +1593,7 @@ static const struct {
+ "    Primitive.io_write_nonblock(buf, exception)\n"
+ "  end\n"
+ "end\n"
+-#line 1505 "miniprelude.c"
++#line 1597 "miniprelude.c"
+ };
+ 
+ static const char prelude_name5[] = "<internal:marshal>";
+@@ -1549,7 +1641,7 @@ static const struct {
+ "    alias restore load\n"
+ "  end\n"
+ "end\n"
+-#line 1553 "miniprelude.c"
++#line 1645 "miniprelude.c"
+ };
+ 
+ static const char prelude_name6[] = "<internal:mjit>";
+@@ -1597,7 +1689,7 @@ static const struct {
+ "    private_constant(*constants)\n"
+ "  end\n"
+ "end\n"
+-#line 1601 "miniprelude.c"
++#line 1693 "miniprelude.c"
+ };
+ 
+ static const char prelude_name7[] = "<internal:mjit_c>";
+@@ -2682,7 +2774,7 @@ static const struct {
+ ,
+ #line 807 "mjit_c.rb"
+ "end if RubyVM::MJIT.enabled? && RubyVM::MJIT.const_defined?(:C)\n"/* not defined for miniruby */
+-#line 2686 "miniprelude.c"
++#line 2778 "miniprelude.c"
+ };
+ 
+ static const char prelude_name8[] = "<internal:pack>";
+@@ -2721,7 +2813,7 @@ static const struct {
+ "    Primitive.pack_unpack1(fmt, offset)\n"
+ "  end\n"
+ "end\n"
+-#line 2725 "miniprelude.c"
++#line 2817 "miniprelude.c"
+ };
+ 
+ static const char prelude_name9[] = "<internal:trace_point>";
+@@ -3158,7 +3250,7 @@ static const struct {
+ "    Primitive.tracepoint_attr_instruction_sequence\n"
+ "  end\n"
+ "end\n"
+-#line 3162 "miniprelude.c"
++#line 3254 "miniprelude.c"
+ };
+ 
+ static const char prelude_name10[] = "<internal:warning>";
+@@ -3219,7 +3311,7 @@ static const struct {
+ "    Primitive.rb_warn_m(msgs, uplevel, category)\n"
+ "  end\n"
+ "end\n"
+-#line 3223 "miniprelude.c"
++#line 3315 "miniprelude.c"
+ };
+ 
+ static const char prelude_name11[] = "<internal:array>";
+@@ -3296,7 +3388,7 @@ static const struct {
+ "    end\n"
+ "  end\n"
+ "end\n"
+-#line 3300 "miniprelude.c"
++#line 3392 "miniprelude.c"
+ };
+ 
+ static const char prelude_name12[] = "<internal:kernel>";
+@@ -3485,7 +3577,7 @@ static const struct {
+ "    end\n"
+ "  end\n"
+ "end\n"
+-#line 3489 "miniprelude.c"
++#line 3581 "miniprelude.c"
+ };
+ 
+ static const char prelude_name13[] = "<internal:ractor>";
+@@ -4356,7 +4448,7 @@ static const struct {
+ "    }\n"
+ "  end\n"
+ "end\n"
+-#line 4360 "miniprelude.c"
++#line 4452 "miniprelude.c"
+ };
+ 
+ static const char prelude_name14[] = "<internal:symbol>";
+@@ -4379,7 +4471,7 @@ static const struct {
+ "\n"
+ "  alias intern to_sym\n"
+ "end\n"
+-#line 4383 "miniprelude.c"
++#line 4475 "miniprelude.c"
+ };
+ 
+ static const char prelude_name15[] = "<internal:timev>";
+@@ -4797,7 +4889,7 @@ static const struct {
+ "    Primitive.time_init_args(year, mon, mday, hour, min, sec, zone)\n"
+ "  end\n"
+ "end\n"
+-#line 4801 "miniprelude.c"
++#line 4893 "miniprelude.c"
+ };
+ 
+ static const char prelude_name16[] = "<internal:thread_sync>";
+@@ -4876,7 +4968,7 @@ static const struct {
+ "    alias_method :<<, :push\n"
+ "  end\n"
+ "end\n"
+-#line 4880 "miniprelude.c"
++#line 4972 "miniprelude.c"
+ };
+ 
+ static const char prelude_name17[] = "<internal:nilclass>";
+@@ -4909,7 +5001,7 @@ static const struct {
+ "    return 0.0\n"
+ "  end\n"
+ "end\n"
+-#line 4913 "miniprelude.c"
++#line 5005 "miniprelude.c"
+ };
+ 
+ static const char prelude_name18[] = "<internal:prelude>";
+@@ -4948,7 +5040,7 @@ static const struct {
+ "    klass.new(self, *args, &block)\n"
+ "  end\n"
+ "end\n"
+-#line 4952 "miniprelude.c"
++#line 5044 "miniprelude.c"
+ };
+ 
+ static const char prelude_name19[] = "<internal:gem_prelude>";
+@@ -4985,7 +5077,7 @@ static const struct {
+ #line 25 "gem_prelude.rb"
+ "end if defined?(SyntaxSuggest)\n"
+ "\n"
+-#line 4989 "miniprelude.c"
++#line 5081 "miniprelude.c"
+ };
+ 
+ static const char prelude_name20[] = "<internal:yjit>";
+@@ -5412,7 +5504,7 @@ static const struct {
+ "    end\n"
+ "  end\n"
+ "end\n"
+-#line 5416 "miniprelude.c"
++#line 5508 "miniprelude.c"
+ };
+ 
+ COMPILER_WARNING_POP
+diff -Nuarp ruby-3.2.4.a/ruby.c ruby-3.2.4.b/ruby.c
+--- ruby-3.2.4.a/ruby.c	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/ruby.c	2024-05-10 00:02:13.664934070 -0400
+@@ -1572,10 +1572,14 @@ proc_options(long argc, char **argv, rub
+ 
+ void Init_builtin_features(void);
+ 
++/* abrt.c */
++void Init_abrt(void);
++
+ static void
+ ruby_init_prelude(void)
+ {
+     Init_builtin_features();
++    Init_abrt();
+     rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
+ }
+ 
+diff -Nuarp ruby-3.2.4.a/template/ruby.pc.in ruby-3.2.4.b/template/ruby.pc.in
+--- ruby-3.2.4.a/template/ruby.pc.in	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/template/ruby.pc.in	2024-05-10 00:01:54.364608076 -0400
+@@ -2,6 +2,7 @@ MAJOR=@MAJOR@
+ MINOR=@MINOR@
+ TEENY=@TEENY@
+ ruby_version=@ruby_version@
++ruby_version_dir_name=@ruby_version_dir_name@
+ RUBY_API_VERSION=@RUBY_API_VERSION@
+ RUBY_PROGRAM_VERSION=@RUBY_PROGRAM_VERSION@
+ arch=@arch@
+diff -Nuarp ruby-3.2.4.a/template/verconf.h.tmpl ruby-3.2.4.b/template/verconf.h.tmpl
+--- ruby-3.2.4.a/template/verconf.h.tmpl	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/template/verconf.h.tmpl	2024-05-10 00:02:09.734071345 -0400
+@@ -36,6 +36,9 @@
+ % if C["RUBY_SEARCH_PATH"]
+ #define RUBY_SEARCH_PATH		"${RUBY_SEARCH_PATH}"
+ % end
++% if C["rubygemsdir"]
++#define RUBYGEMS_DIR			"${rubygemsdir}"
++% end
+ %
+ % R = {}
+ % R["ruby_version"] = '"RUBY_LIB_VERSION"'
+diff -Nuarp ruby-3.2.4.a/test/-ext-/bug_reporter/test_bug_reporter.rb ruby-3.2.4.b/test/-ext-/bug_reporter/test_bug_reporter.rb
+--- ruby-3.2.4.a/test/-ext-/bug_reporter/test_bug_reporter.rb	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/test/-ext-/bug_reporter/test_bug_reporter.rb	2024-05-10 00:02:21.748651770 -0400
+@@ -28,7 +28,7 @@ class TestBugReporter < Test::Unit::Test
+             "-C", tmpdir]
+     args.push("--yjit") if yjit_enabled? # We want the printed description to match this process's RUBY_DESCRIPTION
+     stdin = "#{no_core}register_sample_bug_reporter(12345); Process.kill :SEGV, $$"
+-    assert_in_out_err(args, stdin, [], expected_stderr, encoding: "ASCII-8BIT")
++    assert_in_out_err(args, stdin, [], expected_stderr, encoding: "ASCII-8BIT", timeout_error: nil)
+   ensure
+     FileUtils.rm_rf(tmpdir) if tmpdir
+   end
+diff -Nuarp ruby-3.2.4.a/test/rubygems/test_gem.rb ruby-3.2.4.b/test/rubygems/test_gem.rb
+--- ruby-3.2.4.a/test/rubygems/test_gem.rb	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/test/rubygems/test_gem.rb	2024-05-10 00:01:54.366608006 -0400
+@@ -1338,7 +1338,8 @@ class TestGem < Gem::TestCase
+ 
+   def test_self_user_dir
+     parts = [@userhome, ".gem", Gem.ruby_engine]
+-    parts << RbConfig::CONFIG["ruby_version"] unless RbConfig::CONFIG["ruby_version"].empty?
++    ruby_version_dir_name = RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"]
++    parts << ruby_version_dir_name unless ruby_version_dir_name.empty?
+ 
+     FileUtils.mkdir_p File.join(parts)
+ 
+@@ -1414,7 +1415,7 @@ class TestGem < Gem::TestCase
+     vendordir(File.join(@tempdir, "vendor")) do
+       expected =
+         File.join RbConfig::CONFIG["vendordir"], "gems",
+-                  RbConfig::CONFIG["ruby_version"]
++                  RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"]
+ 
+       assert_equal expected, Gem.vendor_dir
+     end
+diff -Nuarp ruby-3.2.4.a/tool/mkconfig.rb ruby-3.2.4.b/tool/mkconfig.rb
+--- ruby-3.2.4.a/tool/mkconfig.rb	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/tool/mkconfig.rb	2024-05-10 00:01:58.164475379 -0400
+@@ -115,7 +115,7 @@ File.foreach "config.status" do |line|
+     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
+     case name
+     when /^prefix$/
+-      val = "(TOPDIR || DESTDIR + #{val})"
++      val = "(((TOPDIR && TOPDIR.empty?) ? nil : TOPDIR) || DESTDIR + #{val})"
+     when /^ARCH_FLAG$/
+       val = "arch_flag || #{val}" if universal
+     when /^UNIVERSAL_ARCHNAMES$/
+diff -Nuarp ruby-3.2.4.a/tool/rbinstall.rb ruby-3.2.4.b/tool/rbinstall.rb
+--- ruby-3.2.4.a/tool/rbinstall.rb	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/tool/rbinstall.rb	2024-05-10 00:02:09.735071310 -0400
+@@ -359,6 +359,7 @@ if CONFIG["vendordir"]
+   vendorlibdir = CONFIG["vendorlibdir"]
+   vendorarchlibdir = CONFIG["vendorarchdir"]
+ end
++rubygemsdir = CONFIG["rubygemsdir"]
+ mandir = CONFIG["mandir", true]
+ docdir = CONFIG["docdir", true]
+ enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
+@@ -453,7 +454,7 @@ end
+ 
+ install?(:doc, :rdoc) do
+   if $rdocdir
+-    ridatadir = File.join(CONFIG['ridir'], CONFIG['ruby_version'], "system")
++    ridatadir = File.join(CONFIG['ridir'], CONFIG['ruby_version_dir_name'] || CONFIG['ruby_version'], "system")
+     prepare "rdoc", ridatadir
+     install_recursive($rdocdir, ridatadir, :no_install => rdoc_noinst, :mode => $data_mode)
+   end
+@@ -595,7 +596,16 @@ end
+ install?(:local, :comm, :lib) do
+   prepare "library scripts", rubylibdir
+   noinst = %w[*.txt *.rdoc *.gemspec]
++  # Bundler carries "rubygems.rb" file, so it must be specialcased :/
++  noinst += %w[rubygems.rb rubygems/ bundler.rb bundler/] if rubygemsdir
+   install_recursive(File.join(srcdir, "lib"), rubylibdir, :no_install => noinst, :mode => $data_mode)
++  if rubygemsdir
++    noinst = %w[*.txt *.rdoc *.gemspec]
++    install_recursive(File.join(srcdir, "lib", "rubygems"), File.join(rubygemsdir, "rubygems"), :no_install => noinst, :mode => $data_mode)
++    install(File.join(srcdir, "lib", "rubygems.rb"), File.join(rubygemsdir, "rubygems.rb"), :mode => $data_mode)
++    install_recursive(File.join(srcdir, "lib", "bundler"), File.join(rubylibdir, "bundler"), :no_install => noinst, :mode => $data_mode)
++    install(File.join(srcdir, "lib", "bundler.rb"), rubylibdir, :mode => $data_mode)
++  end
+ end
+ 
+ install?(:local, :comm, :hdr, :'comm-hdr') do
+diff -Nuarp ruby-3.2.4.a/vm.c ruby-3.2.4.b/vm.c
+--- ruby-3.2.4.a/vm.c	2024-04-23 06:20:09.000000000 -0400
++++ ruby-3.2.4.b/vm.c	2024-05-10 00:02:17.582797248 -0400
+@@ -547,7 +547,15 @@ rb_dtrace_setup(rb_execution_context_t *
+     }
+     type = BUILTIN_TYPE(klass);
+     if (type == T_CLASS || type == T_ICLASS || type == T_MODULE) {
+-        VALUE name = rb_class_path(klass);
++        VALUE name = Qnil;
++        /*
++         * Special treatment for rb_mRubyVMFrozenCore wchi is broken by GC.
++         * https://bugs.ruby-lang.org/issues/18257
++         */
++        if (klass == rb_mRubyVMFrozenCore)
++            name = rb_str_new_cstr("RubyVM::FrozenCore");
++        else
++            name = rb_class_path(klass);
+         const char *classname, *filename;
+         const char *methodname = rb_id2name(id);
+         if (methodname && (filename = rb_source_location_cstr(&args->line_no)) != 0) {
