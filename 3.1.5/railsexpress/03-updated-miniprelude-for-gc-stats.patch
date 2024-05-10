@@ -1,0 +1,250 @@
+--- ruby-3.1.5.a/miniprelude.c	2024-05-10 00:43:11.630651166 -0400
++++ ruby-3.1.5.b/miniprelude.c	2024-05-10 00:43:56.820067408 -0400
+@@ -547,8 +547,9 @@ static const char prelude_name2[] = "<in
+ static const struct {
+     char L0[492]; /* 1..70 */
+     char L70[468]; /* 71..197 */
+-    char L197[470]; /* 198..237 */
+-    char L237[211]; /* 238..244 */
++    char L197[479]; /* 198..244 */
++    char L244[501]; /* 245..317 */
++    char L317[280]; /* 318..330 */
+ } prelude_code2 = {
+ #line 1 "gc.rb"
+ ""/* for gc.c */
+@@ -789,18 +790,106 @@ static const struct {
+ "      ULL2NUM(rb_objspace.profile.total_time_ns)\n"
+ "    }\n"
+ "  end\n"
++"\n"
++"\n"/* call-seq: */
++"\n"/*    GC.enable_stats	  => true or false */
++"\n"/*  */
++"\n"/* Enables garbage collection statistics, returning <code>true</code> if garbage */
++"\n"/* collection statistics was already enabled. */
++"\n"/*  */
++"\n"/*    GC.enable_stats	 #=> false or true */
++"\n"/*    GC.enable_stats	 #=> true */
++"  def self.enable_stats\n"
++,
++#line 245 "gc.rb"
++"    __builtin_gc_enable_stats\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*    GC.disable_stats	   => true or false */
++"\n"/*  */
++"\n"/* Disables garbage collection statistics, returning <code>true</code> if garbage */
++"\n"/* collection statistics was already disabled. */
++"\n"/*  */
++"\n"/*    GC.disable_stats	  #=> false or true */
++"\n"/*    GC.disable_stats	  #=> true */
++"  def self.disable_stats\n"
++"    __builtin_gc_disable_stats\n"
++"  end\n"
++"\n"
++"\n"/* call-seq: */
++"\n"/*    GC.stats_enabled?    => true or false */
++"\n"/*  */
++"\n"/* Check whether GC stats have been enabled. */
++"\n"/*  */
++"\n"/*    GC.stats_enabled?   #=> false or true */
++"  def self.stats_enabled?\n"
++"    __builtin_gc_stats_enabled\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*    GC.time	  => Integer */
++"\n"/*  */
++"\n"/* Returns the time spent during garbage collection while GC statistics collection */
++"\n"/* was enabled (in micro seconds). */
++"\n"/*  */
++"\n"/*    GC.time	  #=> 20000 */
++"  def self.time\n"
++"    __builtin_gc_time\n"
++"  end\n"
++"\n"
++"\n"/*  call-seq: */
++"\n"/* GC.heap_slots	=> Integer */
++"\n"/*  */
++"\n"/*  Returns the number of heap slots available for object allocations. */
++"\n"/*  */
++"\n"/* GC.heap_slots	#=> 10000 */
++"  def self.heap_slots\n"
++"    __builtin_gc_heap_slots\n"
++"  end\n"
++"\n"
++"\n"/* call-seq: */
++"\n"/*    GC.heap_slots_live_after_last_gc	   => Integer */
++"\n"/*  */
++"\n"/* Returns the number of heap slots which were live after the last garbage collection. */
++"\n"/*  */
++"\n"/*    GC.heap_slots_live_after_last_gc	   #=> 231223 */
++"  def self.heap_slots_live_after_last_gc\n"
++"    __builtin_gc_heap_slots_live_after_last_gc\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*  GC.total_mallocs	   => Integer */
++"\n"/*  */
++"\n"/*   Returns the number malloc calls. Might wrap around. */
++"\n"/*  */
++"\n"/*  GC.total_mallocs	   #=> 324234323246 */
++"  def self.total_mallocs\n"
++"    __builtin_gc_total_mallocs\n"
++"  end\n"
++"\n"
++"\n"/*   call-seq: */
++"\n"/*  GC.total_malloced_bytes	   => Integer */
++"\n"/*  */
++"\n"/*   Returns the number of bytes allocated. Might wrap around. */
++"\n"/*  */
++"\n"/*  GC.total_malloced_bytes	   #=> 354656256432446 */
++"  def self.total_malloced_bytes\n"
++,
++#line 318 "gc.rb"
++"    __builtin_gc_total_malloced_bytes\n"
++"  end\n"
++"\n"
+ "end\n"
+ "\n"
+ "module ObjectSpace\n"
+-,
+-#line 238 "gc.rb"
+ "  def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true\n"
+ "    Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false\n"
+ "  end\n"
+ "\n"
+ "  module_function :garbage_collect\n"
+ "end\n"
+-#line 804 "miniprelude.c"
++#line 893 "miniprelude.c"
+ };
+ 
+ static const char prelude_name3[] = "<internal:numeric>";
+@@ -1152,7 +1241,7 @@ static const struct {
+ "  end\n"
+ "\n"
+ "end\n"
+-#line 1156 "miniprelude.c"
++#line 1245 "miniprelude.c"
+ };
+ 
+ static const char prelude_name4[] = "<internal:io>";
+@@ -1283,7 +1372,7 @@ static const struct {
+ "    Primitive.io_write_nonblock(buf, exception)\n"
+ "  end\n"
+ "end\n"
+-#line 1287 "miniprelude.c"
++#line 1376 "miniprelude.c"
+ };
+ 
+ static const char prelude_name5[] = "<internal:marshal>";
+@@ -1331,7 +1420,7 @@ static const struct {
+ "    alias restore load\n"
+ "  end\n"
+ "end\n"
+-#line 1335 "miniprelude.c"
++#line 1424 "miniprelude.c"
+ };
+ 
+ static const char prelude_name6[] = "<internal:pack>";
+@@ -1653,7 +1742,7 @@ static const struct {
+ "    Primitive.pack_unpack1(fmt, offset)\n"
+ "  end\n"
+ "end\n"
+-#line 1657 "miniprelude.c"
++#line 1746 "miniprelude.c"
+ };
+ 
+ static const char prelude_name7[] = "<internal:trace_point>";
+@@ -2040,7 +2129,7 @@ static const struct {
+ "    Primitive.tracepoint_attr_instruction_sequence\n"
+ "  end\n"
+ "end\n"
+-#line 2044 "miniprelude.c"
++#line 2133 "miniprelude.c"
+ };
+ 
+ static const char prelude_name8[] = "<internal:warning>";
+@@ -2101,7 +2190,7 @@ static const struct {
+ "    Primitive.rb_warn_m(msgs, uplevel, category)\n"
+ "  end\n"
+ "end\n"
+-#line 2105 "miniprelude.c"
++#line 2194 "miniprelude.c"
+ };
+ 
+ static const char prelude_name9[] = "<internal:array>";
+@@ -2178,7 +2267,7 @@ static const struct {
+ "    end\n"
+ "  end\n"
+ "end\n"
+-#line 2182 "miniprelude.c"
++#line 2271 "miniprelude.c"
+ };
+ 
+ static const char prelude_name10[] = "<internal:kernel>";
+@@ -2367,7 +2456,7 @@ static const struct {
+ "    end\n"
+ "  end\n"
+ "end\n"
+-#line 2371 "miniprelude.c"
++#line 2460 "miniprelude.c"
+ };
+ 
+ static const char prelude_name11[] = "<internal:ractor>";
+@@ -3238,7 +3327,7 @@ static const struct {
+ "    }\n"
+ "  end\n"
+ "end\n"
+-#line 3242 "miniprelude.c"
++#line 3331 "miniprelude.c"
+ };
+ 
+ static const char prelude_name12[] = "<internal:timev>";
+@@ -3561,7 +3650,7 @@ static const struct {
+ "    Primitive.time_init_args(year, mon, mday, hour, min, sec, zone)\n"
+ "  end\n"
+ "end\n"
+-#line 3565 "miniprelude.c"
++#line 3654 "miniprelude.c"
+ };
+ 
+ static const char prelude_name13[] = "<internal:nilclass>";
+@@ -3594,7 +3683,7 @@ static const struct {
+ "    return 0.0\n"
+ "  end\n"
+ "end\n"
+-#line 3598 "miniprelude.c"
++#line 3687 "miniprelude.c"
+ };
+ 
+ static const char prelude_name14[] = "<internal:prelude>";
+@@ -3624,7 +3713,7 @@ static const struct {
+ "\n"
+ "  private :pp\n"
+ "end\n"
+-#line 3628 "miniprelude.c"
++#line 3717 "miniprelude.c"
+ };
+ 
+ static const char prelude_name15[] = "<internal:gem_prelude>";
+@@ -3651,7 +3740,7 @@ static const struct {
+ "rescue LoadError\n"
+ "  warn \"`did_you_mean' was not loaded.\"\n"
+ "end if defined?(DidYouMean)\n"
+-#line 3655 "miniprelude.c"
++#line 3744 "miniprelude.c"
+ };
+ 
+ static const char prelude_name16[] = "<internal:yjit>";
+@@ -3992,7 +4081,7 @@ static const struct {
+ "    end\n"
+ "  end\n"
+ "end\n"
+-#line 3996 "miniprelude.c"
++#line 4085 "miniprelude.c"
+ };
+ 
+ COMPILER_WARNING_POP
