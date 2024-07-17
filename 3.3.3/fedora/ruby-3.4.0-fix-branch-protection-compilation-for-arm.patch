@@ -1,0 +1,24 @@
+From db4ba95bf12f9303e38a9a78979cd363cb9a19fb Mon Sep 17 00:00:00 2001
+From: Jarek Prokop <jprokop@redhat.com>
+Date: Fri, 12 Jan 2024 18:33:34 +0100
+Subject: [PATCH] aarch64: Prepend -mbranch-protection=standard option when
+ checking branch protection.
+
+Related Upstream issue: https://bugs.ruby-lang.org/issues/20154
+---
+ configure.ac | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index 18b4247991..5ea8ada8f7 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -827,7 +827,7 @@ AS_IF([test "$GCC" = yes], [
+ 
+     # aarch64 branch protection
+     AS_CASE(["$target_cpu"], [aarch64], [
+-	AS_FOR(option, opt, [-mbranch-protection=pac-ret -msign-return-address=all], [
++	AS_FOR(option, opt, [-mbranch-protection=standard -mbranch-protection=pac-ret -msign-return-address=all], [
+             RUBY_TRY_CFLAGS(option, [branch_protection=yes], [branch_protection=no])
+             AS_IF([test "x$branch_protection" = xyes], [
+                 # C compiler and assembler must be consistent for -mbranch-protection
