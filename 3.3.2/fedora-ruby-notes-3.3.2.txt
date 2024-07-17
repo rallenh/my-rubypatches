@@ -68,7 +68,8 @@ patch -p1 -d ./ruby-3.3.2.b < ./fedora/ruby-2.7.0-Initialize-ABRT-hook.patch;
 patch -p1 -d ./ruby-3.3.2.b < ./fedora/ruby-3.3.0-Disable-syntax-suggest-test-case.patch;
 patch -p1 -d ./ruby-3.3.2.b < ./fedora/ruby-3.3.0-Revert-Optimize-allocations-in-Hash-compare_by_identity.patch;
 patch -p1 -d ./ruby-3.3.2.b < ./fedora/ruby-3.4.0-fix-branch-protection-compilation-for-arm.patch;
-patch -p1 -d ./ruby-3.3.2.b < ./fedora/ruby-3.4.0-Fix-pointer-incompatiblity.patch
+patch -p1 -d ./ruby-3.3.2.b < ./fedora/ruby-3.4.0-Fix-pointer-incompatiblity.patch;
+patch -p1 -d ./ruby-3.3.2.b < ./fedora/ruby-3.3.3-RUBY-CHECK-HEADER-didn-t-define-HAVE-header-file-.patch;
 patch -p1 -d ./ruby-3.3.2.b < ./railsexpress/01-improve-gc-stats.patch;
 patch -p1 -d ./ruby-3.3.2.b < ./railsexpress/02-updated-miniprelude-for-gc-stats.patch;
 patch -p1 -d ./ruby-3.3.2.b < ./railsexpress/03-updated-gc.rbinc-for-gc-stats.patch;

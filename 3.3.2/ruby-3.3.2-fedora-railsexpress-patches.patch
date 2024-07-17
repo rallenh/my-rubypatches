@@ -1,6 +1,6 @@
 diff -Nuarp ruby-3.3.2.a/abrt.c ruby-3.3.2.b/abrt.c
 --- ruby-3.3.2.a/abrt.c	1969-12-31 19:00:00.000000000 -0500
-+++ ruby-3.3.2.b/abrt.c	2024-05-30 13:20:32.758151723 -0400
++++ ruby-3.3.2.b/abrt.c	2024-07-15 20:50:16.669834503 -0400
 @@ -0,0 +1,12 @@
 +#include "internal.h"
 +
@@ -16,7 +16,7 @@ diff -Nuarp ruby-3.3.2.a/abrt.c ruby-3.3.2.b/abrt.c
 +}
 diff -Nuarp ruby-3.3.2.a/common.mk ruby-3.3.2.b/common.mk
 --- ruby-3.3.2.a/common.mk	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/common.mk	2024-05-30 13:20:37.745979209 -0400
++++ ruby-3.3.2.b/common.mk	2024-07-15 20:50:19.982717396 -0400
 @@ -111,7 +111,8 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
  		prism/prism.$(OBJEXT) \
  		prism_init.$(OBJEXT)
@@ -38,7 +38,7 @@ diff -Nuarp ruby-3.3.2.a/common.mk ruby-3.3.2.b/common.mk
  yes-test-bundler-precheck: main $(arch)-fake.rb
 diff -Nuarp ruby-3.3.2.a/configure.ac ruby-3.3.2.b/configure.ac
 --- ruby-3.3.2.a/configure.ac	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/configure.ac	2024-05-30 13:20:46.152688449 -0400
++++ ruby-3.3.2.b/configure.ac	2024-07-15 20:50:27.330457664 -0400
 @@ -136,7 +136,7 @@ RUBY_BASE_NAME=`echo ruby | sed "$progra
  RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
  AC_SUBST(RUBY_BASE_NAME)
@@ -200,7 +200,7 @@ diff -Nuarp ruby-3.3.2.a/configure.ac ruby-3.3.2.b/configure.ac
      AS_IF([test "${rb_cv_architecture_available}" = yes], [
 diff -Nuarp ruby-3.3.2.a/configure.ac.orig ruby-3.3.2.b/configure.ac.orig
 --- ruby-3.3.2.a/configure.ac.orig	1969-12-31 19:00:00.000000000 -0500
-+++ ruby-3.3.2.b/configure.ac.orig	2024-05-30 13:20:28.691292379 -0400
++++ ruby-3.3.2.b/configure.ac.orig	2024-07-15 20:50:13.028963202 -0400
 @@ -0,0 +1,4697 @@
 +dnl Process this file with autoconf to produce a configure script.
 +AC_INIT
@@ -4901,7 +4901,7 @@ diff -Nuarp ruby-3.3.2.a/configure.ac.orig ruby-3.3.2.b/configure.ac.orig
 +])
 diff -Nuarp ruby-3.3.2.a/gc.c ruby-3.3.2.b/gc.c
 --- ruby-3.3.2.a/gc.c	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/gc.c	2024-05-30 13:20:55.487365596 -0400
++++ ruby-3.3.2.b/gc.c	2024-07-15 20:50:50.738630217 -0400
 @@ -824,6 +824,8 @@ typedef struct rb_objspace {
          unsigned int during_minor_gc : 1;
          unsigned int during_incremental_marking : 1;
@@ -5177,7 +5177,7 @@ diff -Nuarp ruby-3.3.2.a/gc.c ruby-3.3.2.b/gc.c
  #if GC_PROFILE_MORE_DETAIL
 diff -Nuarp ruby-3.3.2.a/gc.rb ruby-3.3.2.b/gc.rb
 --- ruby-3.3.2.a/gc.rb	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/gc.rb	2024-05-30 13:20:55.488365562 -0400
++++ ruby-3.3.2.b/gc.rb	2024-07-15 20:50:50.738630217 -0400
 @@ -320,6 +320,92 @@ module GC
        ULL2NUM(rb_objspace.profile.marking_time_ns + rb_objspace.profile.sweeping_time_ns)
      }
@@ -5273,7 +5273,7 @@ diff -Nuarp ruby-3.3.2.a/gc.rb ruby-3.3.2.b/gc.rb
  module ObjectSpace
 diff -Nuarp ruby-3.3.2.a/gc.rbinc ruby-3.3.2.b/gc.rbinc
 --- ruby-3.3.2.a/gc.rbinc	2024-05-29 20:23:13.000000000 -0400
-+++ ruby-3.3.2.b/gc.rbinc	2024-05-30 13:21:06.073999441 -0400
++++ ruby-3.3.2.b/gc.rbinc	2024-07-15 20:50:58.922340933 -0400
 @@ -52,6 +52,14 @@ void Init_builtin_gc(void)
      RB_BUILTIN_FUNCTION(10, _bi0, builtin_inline_class_297, 0),
      RB_BUILTIN_FUNCTION(11, _bi1, builtin_inline_class_309, 0),
@@ -5306,7 +5306,7 @@ diff -Nuarp ruby-3.3.2.a/gc.rbinc ruby-3.3.2.b/gc.rbinc
    // load
 diff -Nuarp ruby-3.3.2.a/hash.c ruby-3.3.2.b/hash.c
 --- ruby-3.3.2.a/hash.c	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/hash.c	2024-05-30 13:20:41.718841801 -0400
++++ ruby-3.3.2.b/hash.c	2024-07-15 20:50:23.486593539 -0400
 @@ -4382,30 +4382,18 @@ rb_hash_compare_by_id(VALUE hash)
      if (hash_iterating_p(hash)) {
          rb_raise(rb_eRuntimeError, "compare_by_identity during iteration");
@@ -5349,7 +5349,7 @@ diff -Nuarp ruby-3.3.2.a/hash.c ruby-3.3.2.b/hash.c
  }
 diff -Nuarp ruby-3.3.2.a/hash.c.orig ruby-3.3.2.b/hash.c.orig
 --- ruby-3.3.2.a/hash.c.orig	1969-12-31 19:00:00.000000000 -0500
-+++ ruby-3.3.2.b/hash.c.orig	2024-05-30 13:20:05.453096105 -0400
++++ ruby-3.3.2.b/hash.c.orig	2024-07-15 20:48:55.997686151 -0400
 @@ -0,0 +1,7463 @@
 +/**********************************************************************
 +
@@ -12816,7 +12816,7 @@ diff -Nuarp ruby-3.3.2.a/hash.c.orig ruby-3.3.2.b/hash.c.orig
 +}
 diff -Nuarp ruby-3.3.2.a/include/ruby/internal/gc.h ruby-3.3.2.b/include/ruby/internal/gc.h
 --- ruby-3.3.2.a/include/ruby/internal/gc.h	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/include/ruby/internal/gc.h	2024-05-30 13:20:55.488365562 -0400
++++ ruby-3.3.2.b/include/ruby/internal/gc.h	2024-07-15 20:50:50.739630182 -0400
 @@ -431,6 +431,15 @@ void rb_gc_unregister_address(VALUE *val
   */
  void rb_gc_register_mark_object(VALUE object);
@@ -12835,7 +12835,7 @@ diff -Nuarp ruby-3.3.2.a/include/ruby/internal/gc.h ruby-3.3.2.b/include/ruby/in
  /**
 diff -Nuarp ruby-3.3.2.a/lib/rdoc/ri/paths.rb ruby-3.3.2.b/lib/rdoc/ri/paths.rb
 --- ruby-3.3.2.a/lib/rdoc/ri/paths.rb	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/lib/rdoc/ri/paths.rb	2024-05-30 13:20:12.900838513 -0400
++++ ruby-3.3.2.b/lib/rdoc/ri/paths.rb	2024-07-15 20:49:57.736503767 -0400
 @@ -10,7 +10,7 @@ module RDoc::RI::Paths
    #:stopdoc:
    require 'rbconfig'
@@ -12847,7 +12847,7 @@ diff -Nuarp ruby-3.3.2.a/lib/rdoc/ri/paths.rb ruby-3.3.2.b/lib/rdoc/ri/paths.rb
  
 diff -Nuarp ruby-3.3.2.a/lib/rubygems/defaults.rb ruby-3.3.2.b/lib/rubygems/defaults.rb
 --- ruby-3.3.2.a/lib/rubygems/defaults.rb	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/lib/rubygems/defaults.rb	2024-05-30 13:20:12.901838478 -0400
++++ ruby-3.3.2.b/lib/rubygems/defaults.rb	2024-07-15 20:49:57.737503732 -0400
 @@ -35,7 +35,7 @@ module Gem
    # specified in the environment
  
@@ -12878,7 +12878,7 @@ diff -Nuarp ruby-3.3.2.a/lib/rubygems/defaults.rb ruby-3.3.2.b/lib/rubygems/defa
    ##
 diff -Nuarp ruby-3.3.2.a/loadpath.c ruby-3.3.2.b/loadpath.c
 --- ruby-3.3.2.a/loadpath.c	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/loadpath.c	2024-05-30 13:20:28.691292379 -0400
++++ ruby-3.3.2.b/loadpath.c	2024-07-15 20:50:13.028963202 -0400
 @@ -65,22 +65,38 @@ const char ruby_initial_load_paths[] =
      RUBY_SEARCH_PATH "\0"
  #endif
@@ -12920,7 +12920,7 @@ diff -Nuarp ruby-3.3.2.a/loadpath.c ruby-3.3.2.b/loadpath.c
  #ifdef RUBY_THINARCH
 diff -Nuarp ruby-3.3.2.a/miniprelude.c ruby-3.3.2.b/miniprelude.c
 --- ruby-3.3.2.a/miniprelude.c	2024-05-29 20:23:13.000000000 -0400
-+++ ruby-3.3.2.b/miniprelude.c	2024-05-30 13:20:59.735218681 -0400
++++ ruby-3.3.2.b/miniprelude.c	2024-07-15 20:50:54.724489322 -0400
 @@ -335,12 +335,12 @@ static const struct {
  ""/* Some examples on this page use this simple file tree: */
  ""/*  */
@@ -13227,7 +13227,7 @@ diff -Nuarp ruby-3.3.2.a/miniprelude.c ruby-3.3.2.b/miniprelude.c
  COMPILER_WARNING_POP
 diff -Nuarp ruby-3.3.2.a/ruby.c ruby-3.3.2.b/ruby.c
 --- ruby-3.3.2.a/ruby.c	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/ruby.c	2024-05-30 13:20:32.776151101 -0400
++++ ruby-3.3.2.b/ruby.c	2024-07-15 20:50:16.674834326 -0400
 @@ -1724,10 +1724,14 @@ proc_options(long argc, char **argv, rub
  
  void Init_builtin_features(void);
@@ -13245,7 +13245,7 @@ diff -Nuarp ruby-3.3.2.a/ruby.c ruby-3.3.2.b/ruby.c
  
 diff -Nuarp ruby-3.3.2.a/spec/ruby/core/kernel/require_spec.rb ruby-3.3.2.b/spec/ruby/core/kernel/require_spec.rb
 --- ruby-3.3.2.a/spec/ruby/core/kernel/require_spec.rb	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/spec/ruby/core/kernel/require_spec.rb	2024-05-30 13:20:32.776151101 -0400
++++ ruby-3.3.2.b/spec/ruby/core/kernel/require_spec.rb	2024-07-15 20:50:16.674834326 -0400
 @@ -25,6 +25,8 @@ describe "Kernel#require" do
      out = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems --disable-did-you-mean')
      features = out.lines.map { |line| File.basename(line.chomp, '.*') }
@@ -13257,7 +13257,7 @@ diff -Nuarp ruby-3.3.2.a/spec/ruby/core/kernel/require_spec.rb ruby-3.3.2.b/spec
      features.reject! { |feature| feature.end_with?('-fake') }
 diff -Nuarp ruby-3.3.2.a/template/ruby.pc.in ruby-3.3.2.b/template/ruby.pc.in
 --- ruby-3.3.2.a/template/ruby.pc.in	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/template/ruby.pc.in	2024-05-30 13:20:12.900838513 -0400
++++ ruby-3.3.2.b/template/ruby.pc.in	2024-07-15 20:49:57.735503803 -0400
 @@ -2,6 +2,7 @@ MAJOR=@MAJOR@
  MINOR=@MINOR@
  TEENY=@TEENY@
@@ -13268,7 +13268,7 @@ diff -Nuarp ruby-3.3.2.a/template/ruby.pc.in ruby-3.3.2.b/template/ruby.pc.in
  arch=@arch@
 diff -Nuarp ruby-3.3.2.a/template/verconf.h.tmpl ruby-3.3.2.b/template/verconf.h.tmpl
 --- ruby-3.3.2.a/template/verconf.h.tmpl	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/template/verconf.h.tmpl	2024-05-30 13:20:28.692292345 -0400
++++ ruby-3.3.2.b/template/verconf.h.tmpl	2024-07-15 20:50:13.029963166 -0400
 @@ -36,6 +36,9 @@
  % if C["RUBY_SEARCH_PATH"]
  #define RUBY_SEARCH_PATH		"${RUBY_SEARCH_PATH}"
@@ -13281,7 +13281,7 @@ diff -Nuarp ruby-3.3.2.a/template/verconf.h.tmpl ruby-3.3.2.b/template/verconf.h
  % R["ruby_version"] = '"RUBY_LIB_VERSION"'
 diff -Nuarp ruby-3.3.2.a/test/rubygems/test_gem.rb ruby-3.3.2.b/test/rubygems/test_gem.rb
 --- ruby-3.3.2.a/test/rubygems/test_gem.rb	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/test/rubygems/test_gem.rb	2024-05-30 13:20:12.901838478 -0400
++++ ruby-3.3.2.b/test/rubygems/test_gem.rb	2024-07-15 20:49:57.737503732 -0400
 @@ -1351,7 +1351,8 @@ class TestGem < Gem::TestCase
  
    def test_self_user_dir
@@ -13303,7 +13303,7 @@ diff -Nuarp ruby-3.3.2.a/test/rubygems/test_gem.rb ruby-3.3.2.b/test/rubygems/te
      end
 diff -Nuarp ruby-3.3.2.a/time.c ruby-3.3.2.b/time.c
 --- ruby-3.3.2.a/time.c	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/time.c	2024-05-30 13:20:50.865525450 -0400
++++ ruby-3.3.2.b/time.c	2024-07-15 20:50:31.876296973 -0400
 @@ -2342,7 +2342,7 @@ zone_timelocal(VALUE zone, VALUE time)
      struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
      wideval_t t, s;
@@ -13313,9 +13313,20 @@ diff -Nuarp ruby-3.3.2.a/time.c ruby-3.3.2.b/time.c
      tm = tm_from_time(rb_cTimeTM, time);
      utc = rb_check_funcall(zone, id_local_to_utc, 1, &tm);
      if (UNDEF_P(utc)) return 0;
+diff -Nuarp ruby-3.3.2.a/tool/m4/ruby_check_header.m4 ruby-3.3.2.b/tool/m4/ruby_check_header.m4
+--- ruby-3.3.2.a/tool/m4/ruby_check_header.m4	2024-05-29 20:23:11.000000000 -0400
++++ ruby-3.3.2.b/tool/m4/ruby_check_header.m4	2024-07-15 20:50:45.685808827 -0400
+@@ -3,6 +3,6 @@ AC_DEFUN([RUBY_CHECK_HEADER],
+     [# RUBY_CHECK_HEADER($@)
+     save_CPPFLAGS="$CPPFLAGS"
+     CPPFLAGS="$CPPFLAGS m4_if([$5], [], [$INCFLAGS], [$5])"
+-    AC_CHECK_HEADER([$1], [$2], [$3], [$4])
++    AC_CHECK_HEADERS([$1], [$2], [$3], [$4])
+     CPPFLAGS="$save_CPPFLAGS"
+     unset save_CPPFLAGS])
 diff -Nuarp ruby-3.3.2.a/tool/mkconfig.rb ruby-3.3.2.b/tool/mkconfig.rb
 --- ruby-3.3.2.a/tool/mkconfig.rb	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/tool/mkconfig.rb	2024-05-30 13:20:17.046695122 -0400
++++ ruby-3.3.2.b/tool/mkconfig.rb	2024-07-15 20:50:02.113349051 -0400
 @@ -115,7 +115,7 @@ File.foreach "config.status" do |line|
      val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
      case name
@@ -13327,7 +13338,7 @@ diff -Nuarp ruby-3.3.2.a/tool/mkconfig.rb ruby-3.3.2.b/tool/mkconfig.rb
      when /^UNIVERSAL_ARCHNAMES$/
 diff -Nuarp ruby-3.3.2.a/tool/rbinstall.rb ruby-3.3.2.b/tool/rbinstall.rb
 --- ruby-3.3.2.a/tool/rbinstall.rb	2024-05-29 20:23:11.000000000 -0400
-+++ ruby-3.3.2.b/tool/rbinstall.rb	2024-05-30 13:20:28.692292345 -0400
++++ ruby-3.3.2.b/tool/rbinstall.rb	2024-07-15 20:50:13.029963166 -0400
 @@ -359,6 +359,7 @@ if CONFIG["vendordir"]
    vendorlibdir = CONFIG["vendorlibdir"]
    vendorarchlibdir = CONFIG["vendorarchdir"]

@@ -1,6 +1,6 @@
 %global major_version 3
 %global minor_version 3
-%global teeny_version 1
+%global teeny_version 2
 %global major_minor_version %{major_version}.%{minor_version}
 
 %global ruby_version %{major_minor_version}.%{teeny_version}
@@ -10,7 +10,7 @@
 #%%global milestone rc1
 
 # Keep the revision enabled for pre-releases from GIT.
-#%%global revision 5124f9ac75
+#%%global revision e5a195edf6
 
 %global ruby_archive %{name}-%{ruby_version}
 
@@ -86,7 +86,7 @@
 %global prettyprint_version 0.2.0
 %global pstore_version 0.1.3
 %global readline_version 0.0.4
-%global reline_version 0.4.1
+%global reline_version 0.5.7
 %global resolv_version 0.3.0
 %global resolv_replace_version 0.1.1
 %global rinda_version 0.2.0
@@ -110,12 +110,12 @@
 %global win32ole_version 1.8.10
 %global yaml_version 0.3.0
 %global prism_version 0.19.0
-%global zlib_version 3.1.0
+%global zlib_version 3.1.1
 
 # Gemified default gems.
 %global bigdecimal_version 3.1.5
 %global io_console_version 0.7.1
-%global irb_version 1.11.0
+%global irb_version 1.13.1
 %global json_version 2.7.1
 %global psych_version 5.1.2
 %global rdoc_version 6.6.3.1
@@ -171,7 +171,7 @@
 Summary: An interpreter of object-oriented scripting language
 Name: ruby
 Version: %{ruby_version}%{?development_release}
-Release: 7%{?dist}
+Release: 9%{?dist}
 # Licenses, which are likely not included in binary RPMs:
 # Apache-2.0:
 #   benchmark/gc/redblack.rb
@@ -281,6 +281,9 @@ Patch12: ruby-3.4.0-fix-branch-protection-compilation-for-arm.patch
 # Fix build issue on i686 due to "incompatible pointer type" error.
 # https://bugs.ruby-lang.org/issues/20447
 Patch13: ruby-3.4.0-Fix-pointer-incompatiblity.patch
+# Fix GMP support
+# https://bugs.ruby-lang.org/issues/20515
+Patch14: ruby-3.3.3-RUBY-CHECK-HEADER-didn-t-define-HAVE-header-file-.patch
 
 Requires: %{name}-libs%{?_isa} = %{version}-%{release}
 %{?with_rubypick:Suggests: rubypick}
@@ -760,6 +763,7 @@ analysis result in RBS format, a standard type description format for Ruby
 %patch 10 -p1
 %patch 12 -p1
 %patch 13 -p1
+%patch 14 -p1
 
 # Provide an example of usage of the tapset:
 cp -a %{SOURCE3} .
@@ -792,6 +796,7 @@ pushd %{_vpath_builddir}
         --enable-shared \
         --with-ruby-version='' \
         --enable-multiarch \
+        --disable-fortify-source `# Should not really be needed: https://bugs.ruby-lang.org/issues/20520` \
         %{?with_yjit: --enable-yjit} \
 
 popd
@@ -962,8 +967,15 @@ sed -i 's/^/%lang(ja) /' .ruby-doc.ja
 %check
 %if 0%{?with_hardening_test}
 # Check Ruby hardening.
-checksec --file=%{_vpath_builddir}/libruby.so.%{ruby_version} | \
-  grep "Full RELRO.*Canary found.*NX enabled.*DSO.*No RPATH.*No RUNPATH.*Yes.*\d*.*\d*.*libruby.so.%{ruby_version}"
+%define fortification_x86_64  fortified="11" fortify-able="28"
+%define fortification_i686    fortified="10" fortify-able="26"
+%define fortification_aarch64 fortified="10" fortify-able="26"
+%define fortification_ppc64le fortified="7" fortify-able="24"
+%define fortification_s390x   fortified="10" fortify-able="24"
+# https://unix.stackexchange.com/questions/366/convince-grep-to-output-all-lines-not-just-those-with-matches
+checksec --format=xml --file=%{_vpath_builddir}/libruby.so.%{ruby_version} | \
+  sed -r "s/<file (.*)\/>/\1/" | \
+  sed -nr $'/relro="full" canary="yes" nx="yes" pie="dso" rpath="no" runpath="no" symbols="yes" fortify_source="partial" %{expand:%{fortification_%{_target_cpu}}} filename='\''redhat-linux-build\/libruby.so.%{ruby_version}'\''/h; ${p;x;/./Q0;Q1}'
 %endif
 
 # Check RubyGems version.
@@ -1714,6 +1726,15 @@ make -C %{_vpath_builddir} runruby TESTRUN_SCRIPT=" \
 
 
 %changelog
+* Thu Jun 06 2024 Vít Ondruch <vondruch@redhat.com> - 3.3.2-9
+- Upgrade to Ruby 3.3.2.
+  Resolves: rhbz#2284020
+
+* Tue May 28 2024 Vít Ondruch <vondruch@redhat.com> - 3.3.1-8
+- Adjust the test to updated `checksec` output.
+  Resolves: rhbz#2282953
+- Make sure fortification flags are applied.
+
 * Tue Apr 23 2024 Vít Ondruch <vondruch@redhat.com> - 3.3.1-7
 - Upgrade to Ruby 3.3.1.
   Resolves: rhbz#2276680
@@ -1721,6 +1742,9 @@ make -C %{_vpath_builddir} runruby TESTRUN_SCRIPT=" \
 * Fri Apr 12 2024 Vít Ondruch <vondruch@redhat.com> - 3.3.0-6
 - Add `bundled` provide for NKF.
 - License review and fixes of SPDX syntax.
+
+* Wed Mar 06 2024 Vít Ondruch <vondruch@redhat.com> - 3.3.0-5
+- Fix FTBFS caused by OpenSSL 3.2.1 update.
 
 * Fri Jan 26 2024 Jarek Prokop <jprokop@redhat.com> - 3.3.0-4
 - Do not set AI_ADDRCONFIG by default when calling getaddrinfo(3).
@@ -2297,7 +2321,7 @@ make -C %{_vpath_builddir} runruby TESTRUN_SCRIPT=" \
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_22_Mass_Rebuild
 
 * Tue Jun 24 2014 Peter Robinson <pbrobinson@fedoraproject.org> 2.1.2-23
-- Fix FTBFS 
+- Fix FTBFS
 - Specify tcl/tk 8.6
 - Add upstream patch to build with libffi 3.1
 
@@ -2438,7 +2462,7 @@ make -C %{_vpath_builddir} runruby TESTRUN_SCRIPT=" \
 * Fri Jan 18 2013 Mamoru TASAKA <mtasaka@fedoraproject.org> - 1.9.3.362-26
 - Provide non-versioned pkgconfig file (bug 789532)
 - Use db5 on F-19 (bug 894022)
- 
+
 * Wed Jan 16 2013 Mamoru TASAKA <mtasaka@fedoraproject.org> - 1.9.3.362-25
 - Backport fix for the upstream PR7629, save the proc made from the given block
   (bug 895173)
