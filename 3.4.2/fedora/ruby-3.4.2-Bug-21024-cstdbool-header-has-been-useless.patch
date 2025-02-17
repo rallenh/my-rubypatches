@@ -1,0 +1,26 @@
+From 57a10fcde1e52ad2282da01c457311d6f190ccfe Mon Sep 17 00:00:00 2001
+From: Nobuyoshi Nakada <nobu@ruby-lang.org>
+Date: Tue, 14 Jan 2025 19:11:33 +0900
+Subject: [PATCH] [Bug #21024] <cstdbool> header has been useless
+
+And finally deprecated at C++-17.
+Patched by jprokop (Jarek Prokop).
+---
+ include/ruby/internal/stdbool.h | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/include/ruby/internal/stdbool.h b/include/ruby/internal/stdbool.h
+index 1ca61136ba..7f3e6dcf97 100644
+--- a/include/ruby/internal/stdbool.h
++++ b/include/ruby/internal/stdbool.h
+@@ -27,10 +27,6 @@
+ 
+ #elif defined(__cplusplus)
+ # /* bool is a keyword in C++. */
+-# if defined(HAVE_STDBOOL_H) && (__cplusplus >= 201103L)
+-#  include <cstdbool>
+-# endif
+-#
+ # ifndef __bool_true_false_are_defined
+ #  define __bool_true_false_are_defined
+ # endif
