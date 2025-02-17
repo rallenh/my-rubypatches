@@ -7,7 +7,7 @@ export HAVE_BASERUBY=no
 # use a more traditional style of install vs Fedora
 ruby-install \
   --no-install-deps \
-  --patch ruby-${__RUBY_VER__}-fedora-railsexpress-patches.patch \
+  --patch ruby-${__RUBY_VER__}-fedora-patches.patch \
   --cleanup \
   --install-dir ${__RBINSTALL_DIR__}/${__RUBY_VER__} \
   ruby ${__RUBY_VER__} -- \

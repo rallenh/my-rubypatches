@@ -67,7 +67,8 @@ patch -p1 -d ./ruby-3.4.1.b < ./fedora/ruby-2.1.0-always-use-i386.patch;
 patch -p1 -d ./ruby-3.4.1.b < ./fedora/ruby-2.1.0-custom-rubygems-location.patch;
 patch -p1 -d ./ruby-3.4.1.b < ./fedora/ruby-2.7.0-Initialize-ABRT-hook.patch;
 patch -p1 -d ./ruby-3.4.1.b < ./fedora/ruby-3.3.0-Disable-syntax-suggest-test-case.patch;
-diff -Nuarp ruby-3.4.1.a ruby-3.4.1.b > ruby-3.4.1-fedora-railsexpress-patches.patch;
+patch -p1 -d ./ruby-3.4.1.b < ./fedora/ruby-3.4.2-Bug-21024-cstdbool-header-has-been-useless.patch;
+diff -Nuarp ruby-3.4.1.a ruby-3.4.1.b > ruby-3.4.1-fedora-patches.patch;
 rm -rf ruby-3.4.1.a ruby-3.4.1.b;
 rm -rf ruby-3.4.1.tar.gz;
 
