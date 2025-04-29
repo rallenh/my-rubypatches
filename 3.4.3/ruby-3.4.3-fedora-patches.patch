@@ -1,0 +1,474 @@
+diff -Nuarp ruby-3.4.3.a/abrt.c ruby-3.4.3.b/abrt.c
+--- ruby-3.4.3.a/abrt.c	1969-12-31 19:00:00.000000000 -0500
++++ ruby-3.4.3.b/abrt.c	2025-04-28 22:01:12.927063360 -0400
+@@ -0,0 +1,12 @@
++#include "internal.h"
++
++void
++Init_abrt(void)
++{
++  rb_eval_string(
++    "  begin\n"
++    "    require 'abrt'\n"
++    "  rescue LoadError\n"
++    "  end\n"
++  );
++}
+diff -Nuarp ruby-3.4.3.a/common.mk ruby-3.4.3.b/common.mk
+--- ruby-3.4.3.a/common.mk	2025-04-14 03:33:49.000000000 -0400
++++ ruby-3.4.3.b/common.mk	2025-04-28 22:01:16.892640542 -0400
+@@ -110,7 +110,8 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
+ 		prism/prism.$(OBJEXT) \
+ 		prism_init.$(OBJEXT)
+ 
+-COMMONOBJS    = array.$(OBJEXT) \
++COMMONOBJS    = abrt.$(OBJEXT) \
++                array.$(OBJEXT) \
+ 		ast.$(OBJEXT) \
+ 		bignum.$(OBJEXT) \
+ 		class.$(OBJEXT) \
+@@ -1661,8 +1662,6 @@ no-test-bundled-gems-spec:
+ 
+ test-syntax-suggest:
+ 
+-check: $(DOT_WAIT) $(PREPARE_SYNTAX_SUGGEST) test-syntax-suggest
+-
+ test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
+ no-test-bundler-precheck:
+ yes-test-bundler-precheck: main $(arch)-fake.rb
+diff -Nuarp ruby-3.4.3.a/configure.ac ruby-3.4.3.b/configure.ac
+--- ruby-3.4.3.a/configure.ac	2025-04-14 03:33:49.000000000 -0400
++++ ruby-3.4.3.b/configure.ac	2025-04-28 22:01:09.304085382 -0400
+@@ -143,7 +143,7 @@ RUBY_BASE_NAME=`echo ruby | sed "$progra
+ RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
+ AC_SUBST(RUBY_BASE_NAME)
+ AC_SUBST(RUBYW_BASE_NAME)
+-AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version}')
++AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version_dir_name}')
+ 
+ dnl checks for alternative programs
+ AC_CANONICAL_BUILD
+@@ -3520,6 +3520,11 @@ AS_IF([test ${multiarch+set}], [
+ ])
+ 
+ archlibdir='${libdir}/${arch}'
++AC_ARG_WITH(archlibdir,
++	    AS_HELP_STRING([--with-archlibdir=DIR],
++			   [prefix for libruby [[LIBDIR/ARCH]]]),
++	    [archlibdir="$withval"])
++
+ sitearchlibdir='${libdir}/${sitearch}'
+ archincludedir='${includedir}/${arch}'
+ sitearchincludedir='${includedir}/${sitearch}'
+@@ -4316,9 +4321,6 @@ AS_CASE(["$target_os"],
+     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
+     ])
+ 
+-rubylibdir='${rubylibprefix}/${ruby_version}'
+-rubyarchdir=${multiarch+'${rubyarchprefix}/${ruby_version}'}${multiarch-'${rubylibdir}/${arch}'}
+-
+ rubyarchprefix=${multiarch+'${archlibdir}/${RUBY_BASE_NAME}'}${multiarch-'${rubylibprefix}/${arch}'}
+ AC_ARG_WITH(rubyarchprefix,
+ 	    AS_HELP_STRING([--with-rubyarchprefix=DIR],
+@@ -4341,57 +4343,68 @@ AC_ARG_WITH(ridir,
+ AC_SUBST(ridir)
+ AC_SUBST(RI_BASE_NAME)
+ 
+-AC_ARG_WITH(ruby-version,
+-	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|minor|STR)]),
+-            [ruby_version=$withval],
+-            [ruby_version=full])
+ unset RUBY_LIB_VERSION
+-unset RUBY_LIB_VERSION_STYLE
+-AS_CASE(["$ruby_version"],
+-  [full],  [RUBY_LIB_VERSION_STYLE='3	/* full */'],
+-  [minor], [RUBY_LIB_VERSION_STYLE='2	/* minor */'])
+-AS_IF([test ${RUBY_LIB_VERSION_STYLE+set}], [
+-    {
+-    echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
+-    echo '@%:@include "confdefs.h"'
+-    echo '#define STRINGIZE(x) x'
+-    test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
+-    echo '#include "version.h"'
+-    echo 'ruby_version=RUBY_LIB_VERSION'
+-    } > conftest.c
+-    ruby_version="`$CPP -I. -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
+-    eval $ruby_version
+-], [test -z "${ruby_version}"], [
+-    AC_MSG_ERROR([No ruby version, No place for bundled libraries])
+-], [
+-    RUBY_LIB_VERSION="${ruby_version}"
+-])
++RUBY_LIB_VERSION_STYLE='3	/* full */'
++{
++echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
++echo '@%:@include "confdefs.h"'
++echo '#define STRINGIZE(x) x'
++test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
++echo '#include "version.h"'
++echo 'ruby_version=RUBY_LIB_VERSION'
++} > conftest.c
++ruby_version="`$CPP -I. -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
++eval $ruby_version
++
++RUBY_LIB_VERSION="${ruby_version}"
++
+ AC_SUBST(RUBY_LIB_VERSION_STYLE)
+ AC_SUBST(RUBY_LIB_VERSION)
+ 
++AC_ARG_WITH(ruby-version,
++	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|STR)]),
++            [ruby_version_dir_name=$withval],
++            [ruby_version_dir_name=full])
++AS_CASE(["$ruby_version_dir_name"],
++  [full], [ruby_version_dir_name='${ruby_version}'])
++
++ruby_version_dir=/'${ruby_version_dir_name}'
++
++if test -z "${ruby_version_dir_name}"; then
++    unset ruby_version_dir
++    AC_DEFINE(RUBY_LIB_VERSION_BLANK, 1)
++fi
++
++rubylibdir='${rubylibprefix}'${ruby_version_dir}
++rubyarchdir=${multiarch+'${rubyarchprefix}'${ruby_version_dir}}${multiarch-'${rubylibdir}/${arch}'}
++
+ AC_ARG_WITH(sitedir,
+ 	    AS_HELP_STRING([--with-sitedir=DIR], [site libraries in DIR [[RUBY_LIB_PREFIX/site_ruby]], "no" to disable site directory]),
+             [sitedir=$withval],
+             [sitedir='${rubylibprefix}/site_ruby'])
+-sitelibdir='${sitedir}/${ruby_version}'
++sitelibdir='${sitedir}'${ruby_version_dir}
+ 
+ AC_ARG_WITH(sitearchdir,
+ 	    AS_HELP_STRING([--with-sitearchdir=DIR],
+ 			   [architecture dependent site libraries in DIR [[SITEDIR/SITEARCH]], "no" to disable site directory]),
+             [sitearchdir=$withval],
+-            [sitearchdir=${multiarch+'${rubysitearchprefix}/site_ruby/${ruby_version}'}${multiarch-'${sitelibdir}/${sitearch}'}])
++            [sitearchdir=${multiarch+'${rubysitearchprefix}/site_ruby'${ruby_version_dir}}${multiarch-'${sitelibdir}/${sitearch}'}])
+ 
+ AC_ARG_WITH(vendordir,
+ 	    AS_HELP_STRING([--with-vendordir=DIR], [vendor libraries in DIR [[RUBY_LIB_PREFIX/vendor_ruby]], "no" to disable vendor directory]),
+             [vendordir=$withval],
+             [vendordir='${rubylibprefix}/vendor_ruby'])
+-vendorlibdir='${vendordir}/${ruby_version}'
++vendorlibdir='${vendordir}'${ruby_version_dir}
+ 
+ AC_ARG_WITH(vendorarchdir,
+ 	    AS_HELP_STRING([--with-vendorarchdir=DIR],
+ 			   [architecture dependent vendor libraries in DIR [[VENDORDIR/SITEARCH]], "no" to disable vendor directory]),
+             [vendorarchdir=$withval],
+-            [vendorarchdir=${multiarch+'${rubysitearchprefix}/vendor_ruby/${ruby_version}'}${multiarch-'${vendorlibdir}/${sitearch}'}])
++            [vendorarchdir=${multiarch+'${rubysitearchprefix}/vendor_ruby'${ruby_version_dir}}${multiarch-'${vendorlibdir}/${sitearch}'}])
++
++AC_ARG_WITH(rubygemsdir,
++           AS_HELP_STRING([--with-rubygemsdir=DIR], [custom rubygems directory]),
++            [rubygemsdir=$withval])
+ 
+ AS_IF([test "${LOAD_RELATIVE+set}"], [
+     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
+@@ -4408,6 +4421,7 @@ AC_SUBST(sitearchincludedir)dnl
+ AC_SUBST(arch)dnl
+ AC_SUBST(sitearch)dnl
+ AC_SUBST(ruby_version)dnl
++AC_SUBST(ruby_version_dir_name)dnl
+ AC_SUBST(rubylibdir)dnl
+ AC_SUBST(rubyarchdir)dnl
+ AC_SUBST(sitedir)dnl
+@@ -4416,10 +4430,13 @@ AC_SUBST(sitearchdir)dnl
+ AC_SUBST(vendordir)dnl
+ AC_SUBST(vendorlibdir)dnl
+ AC_SUBST(vendorarchdir)dnl
++AC_SUBST(rubygemsdir)dnl
+ 
+ AC_SUBST(CONFIGURE, "`echo $0 | sed 's|.*/||'`")dnl
+ AC_SUBST(configure_args, "`echo "${ac_configure_args}" | sed 's/\\$/$$/g'`")dnl
+ 
++target_cpu=`echo $target_cpu | sed s/i.86/i386/`
++
+ AS_IF([test "${universal_binary-no}" = yes ], [
+     arch="universal-${target_os}"
+     AS_IF([test "${rb_cv_architecture_available}" = yes], [
+diff -Nuarp ruby-3.4.3.a/lib/rdoc/ri/paths.rb ruby-3.4.3.b/lib/rdoc/ri/paths.rb
+--- ruby-3.4.3.a/lib/rdoc/ri/paths.rb	2025-04-14 03:33:49.000000000 -0400
++++ ruby-3.4.3.b/lib/rdoc/ri/paths.rb	2025-04-28 22:00:53.301165591 -0400
+@@ -10,7 +10,7 @@ module RDoc::RI::Paths
+   #:stopdoc:
+   require 'rbconfig'
+ 
+-  version = RbConfig::CONFIG['ruby_version']
++  version = RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
+ 
+   BASE    = File.join RbConfig::CONFIG['ridir'], version
+ 
+diff -Nuarp ruby-3.4.3.a/lib/rubygems/defaults.rb ruby-3.4.3.b/lib/rubygems/defaults.rb
+--- ruby-3.4.3.a/lib/rubygems/defaults.rb	2025-04-14 03:33:49.000000000 -0400
++++ ruby-3.4.3.b/lib/rubygems/defaults.rb	2025-04-28 22:00:53.301639709 -0400
+@@ -35,7 +35,7 @@ module Gem
+   # specified in the environment
+ 
+   def self.default_dir
+-    @default_dir ||= File.join(RbConfig::CONFIG["rubylibprefix"], "gems", RbConfig::CONFIG["ruby_version"])
++    @default_dir ||= File.join(RbConfig::CONFIG["rubylibprefix"], "gems", RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"])
+   end
+ 
+   ##
+@@ -104,7 +104,8 @@ module Gem
+     gem_dir = File.join(Gem.user_home, ".gem")
+     gem_dir = File.join(Gem.data_home, "gem") unless File.exist?(gem_dir)
+     parts = [gem_dir, ruby_engine]
+-    parts << RbConfig::CONFIG["ruby_version"] unless RbConfig::CONFIG["ruby_version"].empty?
++    ruby_version_dir_name = RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"]
++    parts << ruby_version_dir_name unless ruby_version_dir_name.empty?
+     File.join parts
+   end
+ 
+@@ -265,7 +266,7 @@ module Gem
+     return nil unless RbConfig::CONFIG.key? "vendordir"
+ 
+     File.join RbConfig::CONFIG["vendordir"], "gems",
+-              RbConfig::CONFIG["ruby_version"]
++              RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"]
+   end
+ 
+   ##
+diff -Nuarp ruby-3.4.3.a/loadpath.c ruby-3.4.3.b/loadpath.c
+--- ruby-3.4.3.a/loadpath.c	2025-04-14 03:33:49.000000000 -0400
++++ ruby-3.4.3.b/loadpath.c	2025-04-28 22:01:09.304251335 -0400
+@@ -65,22 +65,38 @@ const char ruby_initial_load_paths[] =
+     RUBY_SEARCH_PATH "\0"
+ #endif
+ #ifndef NO_RUBY_SITE_LIB
++#ifdef RUBY_LIB_VERSION_BLANK
++    RUBY_SITE_LIB "\0"
++#else
+     RUBY_SITE_LIB2 "\0"
++#endif
+ #ifdef RUBY_THINARCH
+     RUBY_SITE_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+ #endif
+     RUBY_SITE_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
++#ifndef RUBY_LIB_VERSION_BLANK
+     RUBY_SITE_LIB "\0"
+ #endif
++#endif
+ 
+ #ifndef NO_RUBY_VENDOR_LIB
++#ifdef RUBY_LIB_VERSION_BLANK
++    RUBY_VENDOR_LIB "\0"
++#else
+     RUBY_VENDOR_LIB2 "\0"
++#endif
+ #ifdef RUBY_THINARCH
+     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+ #endif
+     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
++#ifndef RUBY_LIB_VERSION_BLANK
+     RUBY_VENDOR_LIB "\0"
+ #endif
++#endif
++
++#ifdef RUBYGEMS_DIR
++    RUBYGEMS_DIR "\0"
++#endif
+ 
+     RUBY_LIB "\0"
+ #ifdef RUBY_THINARCH
+diff -Nuarp ruby-3.4.3.a/ruby.c ruby-3.4.3.b/ruby.c
+--- ruby-3.4.3.a/ruby.c	2025-04-14 03:33:49.000000000 -0400
++++ ruby-3.4.3.b/ruby.c	2025-04-28 22:01:12.931143764 -0400
+@@ -1744,10 +1744,14 @@ proc_options(long argc, char **argv, rub
+ 
+ void Init_builtin_features(void);
+ 
++/* abrt.c */
++void Init_abrt(void);
++
+ static void
+ ruby_init_prelude(void)
+ {
+     Init_builtin_features();
++    Init_abrt();
+     rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
+ }
+ 
+diff -Nuarp ruby-3.4.3.a/spec/ruby/core/kernel/require_spec.rb ruby-3.4.3.b/spec/ruby/core/kernel/require_spec.rb
+--- ruby-3.4.3.a/spec/ruby/core/kernel/require_spec.rb	2025-04-14 03:33:49.000000000 -0400
++++ ruby-3.4.3.b/spec/ruby/core/kernel/require_spec.rb	2025-04-28 22:01:12.931416598 -0400
+@@ -25,6 +25,8 @@ describe "Kernel#require" do
+     out = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems --disable-did-you-mean')
+     features = out.lines.map { |line| File.basename(line.chomp, '.*') }
+ 
++    # Ignore ABRT
++    features -= %w[abrt]
+     # Ignore CRuby internals
+     features -= %w[encdb transdb windows_1252 windows_31j]
+     features.reject! { |feature| feature.end_with?('-fake') }
+diff -Nuarp ruby-3.4.3.a/template/ruby.pc.in ruby-3.4.3.b/template/ruby.pc.in
+--- ruby-3.4.3.a/template/ruby.pc.in	2025-04-14 03:33:49.000000000 -0400
++++ ruby-3.4.3.b/template/ruby.pc.in	2025-04-28 22:00:53.300902267 -0400
+@@ -2,6 +2,7 @@ MAJOR=@MAJOR@
+ MINOR=@MINOR@
+ TEENY=@TEENY@
+ ruby_version=@ruby_version@
++ruby_version_dir_name=@ruby_version_dir_name@
+ RUBY_API_VERSION=@RUBY_API_VERSION@
+ RUBY_PROGRAM_VERSION=@RUBY_PROGRAM_VERSION@
+ arch=@arch@
+diff -Nuarp ruby-3.4.3.a/template/verconf.h.tmpl ruby-3.4.3.b/template/verconf.h.tmpl
+--- ruby-3.4.3.a/template/verconf.h.tmpl	2025-04-14 03:33:49.000000000 -0400
++++ ruby-3.4.3.b/template/verconf.h.tmpl	2025-04-28 22:01:09.304483079 -0400
+@@ -36,6 +36,9 @@
+ % if C["RUBY_SEARCH_PATH"]
+ #define RUBY_SEARCH_PATH		"${RUBY_SEARCH_PATH}"
+ % end
++% if C["rubygemsdir"]
++#define RUBYGEMS_DIR			"${rubygemsdir}"
++% end
+ %
+ % R = {}
+ % R["ruby_version"] = '"RUBY_LIB_VERSION"'
+diff -Nuarp ruby-3.4.3.a/test/openssl/test_pkey_rsa.rb ruby-3.4.3.b/test/openssl/test_pkey_rsa.rb
+--- ruby-3.4.3.a/test/openssl/test_pkey_rsa.rb	2025-04-14 03:33:49.000000000 -0400
++++ ruby-3.4.3.b/test/openssl/test_pkey_rsa.rb	2025-04-28 22:01:20.432066009 -0400
+@@ -108,13 +108,13 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PK
+     pssopts = {
+       "rsa_padding_mode" => "pss",
+       "rsa_pss_saltlen" => 20,
+-      "rsa_mgf1_md" => "SHA1"
++      "rsa_mgf1_md" => "SHA256"
+     }
+     sig_pss = key.sign("SHA256", data, pssopts)
+     assert_equal 256, sig_pss.bytesize
+     assert_equal true, key.verify("SHA256", sig_pss, data, pssopts)
+     assert_equal true, key.verify_pss("SHA256", sig_pss, data,
+-                                      salt_length: 20, mgf1_hash: "SHA1")
++                                      salt_length: 20, mgf1_hash: "SHA256")
+     # Defaults to PKCS #1 v1.5 padding => verification failure
+     assert_equal false, key.verify("SHA256", sig_pss, data)
+ 
+@@ -188,22 +188,22 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PK
+     data = "Sign me!"
+     invalid_data = "Sign me?"
+ 
+-    signature = key.sign_pss("SHA256", data, salt_length: 20, mgf1_hash: "SHA1")
++    signature = key.sign_pss("SHA256", data, salt_length: 20, mgf1_hash: "SHA256")
+     assert_equal 256, signature.bytesize
+     assert_equal true,
+-      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA1")
++      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA256")
+     assert_equal true,
+-      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
++      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA256")
+     assert_equal false,
+-      key.verify_pss("SHA256", signature, invalid_data, salt_length: 20, mgf1_hash: "SHA1")
++      key.verify_pss("SHA256", signature, invalid_data, salt_length: 20, mgf1_hash: "SHA256")
+ 
+-    signature = key.sign_pss("SHA256", data, salt_length: :digest, mgf1_hash: "SHA1")
++    signature = key.sign_pss("SHA256", data, salt_length: :digest, mgf1_hash: "SHA256")
+     assert_equal true,
+-      key.verify_pss("SHA256", signature, data, salt_length: 32, mgf1_hash: "SHA1")
++      key.verify_pss("SHA256", signature, data, salt_length: 32, mgf1_hash: "SHA256")
+     assert_equal true,
+-      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
++      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA256")
+     assert_equal false,
+-      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA1")
++      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA256")
+ 
+     # The sign_pss with `salt_length: :max` raises the "invalid salt length"
+     # error in FIPS. We need to skip the tests in FIPS.
+@@ -213,18 +213,18 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PK
+     # FIPS 186-5 section 5.4 PKCS #1
+     # https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf
+     unless OpenSSL.fips_mode
+-      signature = key.sign_pss("SHA256", data, salt_length: :max, mgf1_hash: "SHA1")
++      signature = key.sign_pss("SHA256", data, salt_length: :max, mgf1_hash: "SHA256")
+       # Should verify on the following salt_length (sLen).
+       # sLen <= emLen (octat) - 2 - hLen (octet) = 2048 / 8 - 2 - 256 / 8 = 222
+       # https://datatracker.ietf.org/doc/html/rfc8017#section-9.1.1
+       assert_equal true,
+-        key.verify_pss("SHA256", signature, data, salt_length: 222, mgf1_hash: "SHA1")
++        key.verify_pss("SHA256", signature, data, salt_length: 222, mgf1_hash: "SHA256")
+       assert_equal true,
+-        key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
++        key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA256")
+     end
+ 
+     assert_raise(OpenSSL::PKey::RSAError) {
+-      key.sign_pss("SHA256", data, salt_length: 223, mgf1_hash: "SHA1")
++      key.sign_pss("SHA256", data, salt_length: 223, mgf1_hash: "SHA256")
+     }
+   end
+ 
+diff -Nuarp ruby-3.4.3.a/test/rubygems/test_gem.rb ruby-3.4.3.b/test/rubygems/test_gem.rb
+--- ruby-3.4.3.a/test/rubygems/test_gem.rb	2025-04-14 03:33:49.000000000 -0400
++++ ruby-3.4.3.b/test/rubygems/test_gem.rb	2025-04-28 22:00:53.302130056 -0400
+@@ -1365,7 +1365,8 @@ class TestGem < Gem::TestCase
+ 
+   def test_self_user_dir
+     parts = [@userhome, ".gem", Gem.ruby_engine]
+-    parts << RbConfig::CONFIG["ruby_version"] unless RbConfig::CONFIG["ruby_version"].empty?
++    ruby_version_dir_name = RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"]
++    parts << ruby_version_dir_name unless ruby_version_dir_name.empty?
+ 
+     FileUtils.mkdir_p File.join(parts)
+ 
+@@ -1441,7 +1442,7 @@ class TestGem < Gem::TestCase
+     vendordir(File.join(@tempdir, "vendor")) do
+       expected =
+         File.join RbConfig::CONFIG["vendordir"], "gems",
+-                  RbConfig::CONFIG["ruby_version"]
++                  RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"]
+ 
+       assert_equal expected, Gem.vendor_dir
+     end
+diff -Nuarp ruby-3.4.3.a/tool/mkconfig.rb ruby-3.4.3.b/tool/mkconfig.rb
+--- ruby-3.4.3.a/tool/mkconfig.rb	2025-04-14 03:33:49.000000000 -0400
++++ ruby-3.4.3.b/tool/mkconfig.rb	2025-04-28 22:00:57.743526322 -0400
+@@ -116,7 +116,7 @@ File.foreach "config.status" do |line|
+     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
+     case name
+     when /^prefix$/
+-      val = "(TOPDIR || DESTDIR + #{val})"
++      val = "(((TOPDIR && TOPDIR.empty?) ? nil : TOPDIR) || DESTDIR + #{val})"
+     when /^ARCH_FLAG$/
+       val = "arch_flag || #{val}" if universal
+     when /^UNIVERSAL_ARCHNAMES$/
+diff -Nuarp ruby-3.4.3.a/tool/rbinstall.rb ruby-3.4.3.b/tool/rbinstall.rb
+--- ruby-3.4.3.a/tool/rbinstall.rb	2025-04-14 03:33:49.000000000 -0400
++++ ruby-3.4.3.b/tool/rbinstall.rb	2025-04-28 22:01:09.304657001 -0400
+@@ -382,6 +382,7 @@ if CONFIG["vendordir"]
+   vendorlibdir = CONFIG["vendorlibdir"]
+   vendorarchlibdir = CONFIG["vendorarchdir"]
+ end
++rubygemsdir = CONFIG["rubygemsdir"]
+ mandir = CONFIG["mandir", true]
+ docdir = CONFIG["docdir", true]
+ enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
+@@ -945,7 +946,7 @@ end
+ 
+ install?(:doc, :rdoc) do
+   if $rdocdir
+-    ridatadir = File.join(CONFIG['ridir'], CONFIG['ruby_version'], "system")
++    ridatadir = File.join(CONFIG['ridir'], CONFIG['ruby_version_dir_name'] || CONFIG['ruby_version'], "system")
+     prepare "rdoc", ridatadir
+     install_recursive($rdocdir, ridatadir, :no_install => rdoc_noinst, :mode => $data_mode)
+   end
+@@ -974,7 +975,16 @@ end
+ install?(:local, :comm, :lib) do
+   prepare "library scripts", rubylibdir
+   noinst = %w[*.txt *.rdoc *.gemspec]
++  # Bundler carries "rubygems.rb" file, so it must be specialcased :/
++  noinst += %w[rubygems.rb rubygems/ bundler.rb bundler/] if rubygemsdir
+   install_recursive(File.join(srcdir, "lib"), rubylibdir, :no_install => noinst, :mode => $data_mode)
++  if rubygemsdir
++    noinst = %w[*.txt *.rdoc *.gemspec]
++    install_recursive(File.join(srcdir, "lib", "rubygems"), File.join(rubygemsdir, "rubygems"), :no_install => noinst, :mode => $data_mode)
++    install(File.join(srcdir, "lib", "rubygems.rb"), File.join(rubygemsdir, "rubygems.rb"), :mode => $data_mode)
++    install_recursive(File.join(srcdir, "lib", "bundler"), File.join(rubylibdir, "bundler"), :no_install => noinst, :mode => $data_mode)
++    install(File.join(srcdir, "lib", "bundler.rb"), rubylibdir, :mode => $data_mode)
++  end
+ end
+ 
+ install?(:local, :comm, :hdr, :'comm-hdr') do
