@@ -9,51 +9,6 @@ Make sure there's no /usr/bin/ruby in the path.
 Most of this is modeled with/after what Fedora is doing, including their
 ./configure and CFLAGS/CXXFLAGS/LDFLAGS.
 
-Stefan Kaes Railsexpress repo: https://github.com/skaes/rvm-patchsets
-Fedora Ruby repo: https://src.fedoraproject.org/rpms/ruby
-
-If there is no "BASERUBY", build will fail due to Railsexpress patches.
-
-To get around this; apply the GC patches, then run the ruby commands below to generate/update
-the GC files that make would generate if there was a BASERUBY.
-
-railsexpress/03-updated-miniprelude-for-gc-stats.patch is a diff of a regenerated miniprelude.c file.
-run in ruby-3.4.1.b:
-ruby ./tool/generic_erb.rb -I. -o miniprelude.c \
-  ./template/prelude.c.tmpl \
-  ./ast.rb \
-  ./dir.rb \
-  ./gc.rb \
-  ./numeric.rb \
-  ./io.rb \
-  ./marshal.rb \
-  ./rjit.rb \
-  ./rjit_c.rb \
-  ./pack.rb \
-  ./trace_point.rb \
-  ./warning.rb \
-  ./array.rb \
-  ./kernel.rb \
-  ./ractor.rb \
-  ./symbol.rb \
-  ./timev.rb \
-  ./thread_sync.rb \
-  ./nilclass.rb \
-  ./prelude.rb \
-  ./gem_prelude.rb \
-  ./yjit.rb \
-  ./yjit_hook.rb
-
-then produce diff:
-diff -Nuarp ruby-3.4.1.a/miniprelude.c  ruby-3.4.1.b/miniprelude.c > railsexpress/02-updated-miniprelude-for-gc-stats.patch
-
-railsexpress/04-updated-gc.rbinc-for-gc-stats.patch is a diff of a regenerated gc.rbinc file.
-run in ruby-3.4.1.b:
-ruby ./tool/mk_builtin_loader.rb gc.rb
-
-then produce diff:
-diff -Nuarp ruby-3.4.1.a/gc.rbinc ruby-3.4.1.b/gc.rbinc > railsexpress/03-updated-gc.rbinc-for-gc-stats.patch
-
 # Ruby 3.4.1
 1. Generate single patch file:
 wget https://cache.ruby-lang.org/pub/ruby/3.4/ruby-3.4.1.tar.gz;
