@@ -1,0 +1,12 @@
+diff -Nuarp ruby-3.2.6.b/configure.ac ruby-3.2.6.c/configure.ac
+--- ruby-3.2.6.b/configure.ac	2024-11-14 19:10:34.299539352 -0500
++++ ruby-3.2.6.c/configure.ac	2024-11-14 19:10:46.390232318 -0500
+@@ -4276,6 +4276,8 @@ AC_SUBST(vendorarchdir)dnl
+ AC_SUBST(CONFIGURE, "`echo $0 | sed 's|.*/||'`")dnl
+ AC_SUBST(configure_args, "`echo "${ac_configure_args}" | sed 's/\\$/$$/g'`")dnl
+
++target_cpu=`echo $target_cpu | sed s/i.86/i386/`
++
+ AS_IF([test "${universal_binary-no}" = yes ], [
+     arch="universal-${target_os}"
+     AS_IF([test "${rb_cv_architecture_available}" = yes], [

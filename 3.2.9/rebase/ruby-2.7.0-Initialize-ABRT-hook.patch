@@ -1,0 +1,46 @@
+diff -Nuarp ruby-3.2.6.b/abrt.c ruby-3.2.6.c/abrt.c
+--- ruby-3.2.6.b/abrt.c	1969-12-31 19:00:00.000000000 -0500
++++ ruby-3.2.6.c/abrt.c	2024-11-14 19:13:41.783778355 -0500
+@@ -0,0 +1,12 @@
++#include "internal.h"
++
++void
++Init_abrt(void)
++{
++  rb_eval_string(
++    "  begin\n"
++    "    require 'abrt'\n"
++    "  rescue LoadError\n"
++    "  end\n"
++  );
++}
+diff -Nuarp ruby-3.2.6.b/common.mk ruby-3.2.6.c/common.mk
+--- ruby-3.2.6.b/common.mk	2024-11-14 19:12:37.352414530 -0500
++++ ruby-3.2.6.c/common.mk	2024-11-14 19:13:41.785778304 -0500
+@@ -86,7 +86,8 @@ ENC_MK        = enc.mk
+ MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
+ 		RUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BOOTSTRAPRUBY)" $(mflags)
+
+-COMMONOBJS    = array.$(OBJEXT) \
++COMMONOBJS    = abrt.$(OBJEXT) \
++                array.$(OBJEXT) \
+ 		ast.$(OBJEXT) \
+ 		bignum.$(OBJEXT) \
+ 		class.$(OBJEXT) \
+diff -Nuarp ruby-3.2.6.b/ruby.c ruby-3.2.6.c/ruby.c
+--- ruby-3.2.6.b/ruby.c	2024-11-14 19:12:37.358414378 -0500
++++ ruby-3.2.6.c/ruby.c	2024-11-14 19:13:41.786778279 -0500
+@@ -1574,10 +1574,14 @@ proc_options(long argc, char **argv, rub
+
+ void Init_builtin_features(void);
+
++/* abrt.c */
++void Init_abrt(void);
++
+ static void
+ ruby_init_prelude(void)
+ {
+     Init_builtin_features();
++    Init_abrt();
+     rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
+ }
