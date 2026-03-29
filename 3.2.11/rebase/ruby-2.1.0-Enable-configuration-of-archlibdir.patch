@@ -1,0 +1,15 @@
+diff -Nuarp ruby-3.2.6.b/configure.ac ruby-3.2.6.c/configure.ac
+--- ruby-3.2.6.b/configure.ac	2024-11-14 19:09:18.243470725 -0500
++++ ruby-3.2.6.c/configure.ac	2024-11-14 19:09:31.124143637 -0500
+@@ -3427,6 +3427,11 @@ AS_IF([test ${multiarch+set}], [
+ ])
+
+ archlibdir='${libdir}/${arch}'
++AC_ARG_WITH(archlibdir,
++	    AS_HELP_STRING([--with-archlibdir=DIR],
++			   [prefix for libruby [[LIBDIR/ARCH]]]),
++	    [archlibdir="$withval"])
++
+ sitearchlibdir='${libdir}/${sitearch}'
+ archincludedir='${includedir}/${arch}'
+ sitearchincludedir='${includedir}/${sitearch}'
