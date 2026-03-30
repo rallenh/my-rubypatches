@@ -1,0 +1,23 @@
+diff -Nuarp ruby-3.1.6.b/compile.c ruby-3.1.6.c/compile.c
+--- ruby-3.1.6.b/compile.c	2026-03-29 19:12:13.785683649 -0400
++++ ruby-3.1.6.c/compile.c	2026-03-29 19:11:21.493460245 -0400
+@@ -9143,7 +9143,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK
+ 	if (node->flags & NODE_FL_NEWLINE) {
+ 	    int event = RUBY_EVENT_LINE;
+ 	    ISEQ_COMPILE_DATA(iseq)->last_line = line;
+-	    if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
++	    if (line > 0 && ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
+ 		event |= RUBY_EVENT_COVERAGE_LINE;
+ 	    }
+ 	    ADD_TRACE(ret, event);
+diff -Nuarp ruby-3.1.6.b/thread.c ruby-3.1.6.c/thread.c
+--- ruby-3.1.6.b/thread.c	2026-03-29 19:11:30.897767410 -0400
++++ ruby-3.1.6.c/thread.c	2026-03-29 19:11:21.489460178 -0400
+@@ -5624,6 +5624,7 @@ update_line_coverage(VALUE data, const r
+ 	VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
+ 	if (lines) {
+ 	    long line = rb_sourceline() - 1;
++        VM_ASSERT(line >= 0);
+ 	    long count;
+ 	    VALUE num;
+             void rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset);
