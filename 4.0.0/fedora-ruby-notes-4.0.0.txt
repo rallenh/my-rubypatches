@@ -1,0 +1,35 @@
+Fedora Ruby / ruby-install / chruby notes
+
+YJIT requires rust/rustc
+
+need to fork chrub/ruby-install/gem_home. ruby-install needs update for newer autotools (configure.ac)
+
+Make sure there's no /usr/bin/ruby in the path.
+
+Most of this is modeled with/after what Fedora is doing, including their
+./configure and CFLAGS/CXXFLAGS/LDFLAGS.
+
+# Ruby 4.0.0
+1. Generate single patch file:
+wget https://cache.ruby-lang.org/pub/ruby/4.0/ruby-4.0.0.tar.gz;
+tar -zxvf ruby-4.0.0.tar.gz;
+cp -r ruby-4.0.0 ruby-4.0.0.b;
+mv ruby-4.0.0 ruby-4.0.0.a;
+patch -p1 -d ./ruby-4.0.0.b < ./fedora/ruby-2.3.0-ruby_version.patch;
+pushd ruby-4.0.0.b/.bundle/gems/rdoc-7.0.3
+patch -p1 < ../../../../fedora/ruby-2.3.0-ruby_version-Add-ruby_version_dir_name-support-for-RDoc.patch;
+patch -p1 < ../../../../fedora/rdoc-pr1531-fix-mutilple-document-installation.patch;
+popd
+patch -p1 -d ./ruby-4.0.0.b < ./fedora/ruby-2.1.0-Prevent-duplicated-paths-when-empty-version-string-i.patch;
+patch -p1 -d ./ruby-4.0.0.b < ./fedora/ruby-2.1.0-Enable-configuration-of-archlibdir.patch;
+patch -p1 -d ./ruby-4.0.0.b < ./fedora/ruby-2.1.0-always-use-i386.patch;
+patch -p1 -d ./ruby-4.0.0.b < ./fedora/ruby-2.1.0-custom-rubygems-location.patch;
+patch -p1 -d ./ruby-4.0.0.b < ./fedora/ruby-2.7.0-Initialize-ABRT-hook.patch;
+patch -p1 -d ./ruby-4.0.0.b < ./fedora/ruby-3.3.0-Disable-syntax-suggest-test-case.patch;
+patch -p1 -d ./ruby-4.0.0.b < ./fedora/ruby-4.0.1-Support-customizable-rustc_flags-for-rustc-builds.patch;
+diff -Nuarp ruby-4.0.0.a ruby-4.0.0.b > ruby-4.0.0-fedora-patches.patch;
+rm -rf ruby-4.0.0.a ruby-4.0.0.b;
+rm -rf ruby-4.0.0.tar.gz;
+
+2. Run the ruby-install for the Ruby mananger in use
+./fedora-ruby-install-for-rbenv.sh;
