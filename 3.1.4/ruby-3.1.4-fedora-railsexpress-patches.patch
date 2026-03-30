@@ -1,6 +1,6 @@
 diff -Nuarp ruby-3.1.4.a/abrt.c ruby-3.1.4.b/abrt.c
 --- ruby-3.1.4.a/abrt.c	1969-12-31 19:00:00.000000000 -0500
-+++ ruby-3.1.4.b/abrt.c	2026-03-29 18:26:17.920670706 -0400
++++ ruby-3.1.4.b/abrt.c	2026-03-29 19:40:47.875805846 -0400
 @@ -0,0 +1,12 @@
 +#include "internal.h"
 +
@@ -16,7 +16,7 @@ diff -Nuarp ruby-3.1.4.a/abrt.c ruby-3.1.4.b/abrt.c
 +}
 diff -Nuarp ruby-3.1.4.a/common.mk ruby-3.1.4.b/common.mk
 --- ruby-3.1.4.a/common.mk	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/common.mk	2026-03-29 18:26:17.923482603 -0400
++++ ruby-3.1.4.b/common.mk	2026-03-29 19:40:47.878653365 -0400
 @@ -82,7 +82,8 @@ ENC_MK        = enc.mk
  MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
  		RUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BOOTSTRAPRUBY)" $(mflags)
@@ -27,9 +27,21 @@ diff -Nuarp ruby-3.1.4.a/common.mk ruby-3.1.4.b/common.mk
  		ast.$(OBJEXT) \
  		bignum.$(OBJEXT) \
  		class.$(OBJEXT) \
+diff -Nuarp ruby-3.1.4.a/compile.c ruby-3.1.4.b/compile.c
+--- ruby-3.1.4.a/compile.c	2023-03-30 06:53:51.000000000 -0400
++++ ruby-3.1.4.b/compile.c	2026-03-29 19:41:00.298164385 -0400
+@@ -9092,7 +9092,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK
+ 	if (node->flags & NODE_FL_NEWLINE) {
+ 	    int event = RUBY_EVENT_LINE;
+ 	    ISEQ_COMPILE_DATA(iseq)->last_line = line;
+-	    if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
++	    if (line > 0 && ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
+ 		event |= RUBY_EVENT_COVERAGE_LINE;
+ 	    }
+ 	    ADD_TRACE(ret, event);
 diff -Nuarp ruby-3.1.4.a/configure.ac ruby-3.1.4.b/configure.ac
 --- ruby-3.1.4.a/configure.ac	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/configure.ac	2026-03-29 18:26:57.731291771 -0400
++++ ruby-3.1.4.b/configure.ac	2026-03-29 19:41:07.212126949 -0400
 @@ -115,7 +115,7 @@ RUBY_BASE_NAME=`echo ruby | sed "$progra
  RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
  AC_SUBST(RUBY_BASE_NAME)
@@ -188,7 +200,7 @@ diff -Nuarp ruby-3.1.4.a/configure.ac ruby-3.1.4.b/configure.ac
      AS_IF([test "${rb_cv_architecture_available}" = yes], [
 diff -Nuarp ruby-3.1.4.a/gc.c ruby-3.1.4.b/gc.c
 --- ruby-3.1.4.a/gc.c	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/gc.c	2026-03-29 18:26:57.732403890 -0400
++++ ruby-3.1.4.b/gc.c	2026-03-29 19:41:07.213229678 -0400
 @@ -303,6 +303,9 @@ rb_gc_guarded_ptr_val(volatile VALUE *pt
  #ifndef GC_MALLOC_LIMIT_GROWTH_FACTOR
  #define GC_MALLOC_LIMIT_GROWTH_FACTOR 1.4
@@ -810,7 +822,7 @@ diff -Nuarp ruby-3.1.4.a/gc.c ruby-3.1.4.b/gc.c
      }
 diff -Nuarp ruby-3.1.4.a/gc.rb ruby-3.1.4.b/gc.rb
 --- ruby-3.1.4.a/gc.rb	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/gc.rb	2026-03-29 18:26:57.727926405 -0400
++++ ruby-3.1.4.b/gc.rb	2026-03-29 19:41:07.206883059 -0400
 @@ -39,27 +39,6 @@ module GC
    end
  
@@ -988,7 +1000,7 @@ diff -Nuarp ruby-3.1.4.a/gc.rb ruby-3.1.4.b/gc.rb
  module ObjectSpace
 diff -Nuarp ruby-3.1.4.a/gc.rbinc ruby-3.1.4.b/gc.rbinc
 --- ruby-3.1.4.a/gc.rbinc	2023-03-30 06:53:53.000000000 -0400
-+++ ruby-3.1.4.b/gc.rbinc	2026-03-29 18:26:57.738777186 -0400
++++ ruby-3.1.4.b/gc.rbinc	2026-03-29 19:41:12.868739774 -0400
 @@ -9,27 +9,27 @@
  #include "builtin.h"                /* for RB_BUILTIN_FUNCTION */
  struct rb_execution_context_struct; /* in vm_core.h */
@@ -1297,7 +1309,7 @@ diff -Nuarp ruby-3.1.4.a/gc.rbinc ruby-3.1.4.b/gc.rbinc
    // load
 diff -Nuarp ruby-3.1.4.a/include/ruby/internal/intern/gc.h ruby-3.1.4.b/include/ruby/internal/intern/gc.h
 --- ruby-3.1.4.a/include/ruby/internal/intern/gc.h	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/include/ruby/internal/intern/gc.h	2026-03-29 18:26:57.728190199 -0400
++++ ruby-3.1.4.b/include/ruby/internal/intern/gc.h	2026-03-29 19:41:07.207391788 -0400
 @@ -387,6 +387,15 @@ VALUE rb_gc_latest_gc_info(VALUE key_or_
   */
  void rb_gc_adjust_memory_usage(ssize_t diff);
@@ -1316,7 +1328,7 @@ diff -Nuarp ruby-3.1.4.a/include/ruby/internal/intern/gc.h ruby-3.1.4.b/include/
  #endif /* RBIMPL_INTERN_GC_H */
 diff -Nuarp ruby-3.1.4.a/lib/bundler/index.rb ruby-3.1.4.b/lib/bundler/index.rb
 --- ruby-3.1.4.a/lib/bundler/index.rb	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/lib/bundler/index.rb	2026-03-29 18:26:45.754781831 -0400
++++ ruby-3.1.4.b/lib/bundler/index.rb	2026-03-29 19:40:47.920071968 -0400
 @@ -71,6 +71,7 @@ module Bundler
        when Gem::Specification, RemoteSpecification, LazySpecification, EndpointSpecification then search_by_spec(query)
        when String then specs_by_name(query)
@@ -1338,7 +1350,7 @@ diff -Nuarp ruby-3.1.4.a/lib/bundler/index.rb ruby-3.1.4.b/lib/bundler/index.rb
      def search_by_spec(spec)
 diff -Nuarp ruby-3.1.4.a/lib/bundler/lazy_specification.rb ruby-3.1.4.b/lib/bundler/lazy_specification.rb
 --- ruby-3.1.4.a/lib/bundler/lazy_specification.rb	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/lib/bundler/lazy_specification.rb	2026-03-29 18:26:45.755046065 -0400
++++ ruby-3.1.4.b/lib/bundler/lazy_specification.rb	2026-03-29 19:40:47.920374803 -0400
 @@ -13,7 +13,6 @@ module Bundler
        @dependencies  = []
        @platform      = platform || Gem::Platform::RUBY
@@ -1434,7 +1446,7 @@ diff -Nuarp ruby-3.1.4.a/lib/bundler/lazy_specification.rb ruby-3.1.4.b/lib/bund
      #
 diff -Nuarp ruby-3.1.4.a/lib/irb/input-method.rb ruby-3.1.4.b/lib/irb/input-method.rb
 --- ruby-3.1.4.a/lib/irb/input-method.rb	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/lib/irb/input-method.rb	2026-03-29 18:26:45.746088875 -0400
++++ ruby-3.1.4.b/lib/irb/input-method.rb	2026-03-29 19:40:47.911003372 -0400
 @@ -14,7 +14,6 @@ require_relative 'magic-file'
  require_relative 'completion'
  require 'io/console'
@@ -1457,7 +1469,7 @@ diff -Nuarp ruby-3.1.4.a/lib/irb/input-method.rb ruby-3.1.4.b/lib/irb/input-meth
          return nil
 diff -Nuarp ruby-3.1.4.a/lib/rdoc/ri/paths.rb ruby-3.1.4.b/lib/rdoc/ri/paths.rb
 --- ruby-3.1.4.a/lib/rdoc/ri/paths.rb	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/lib/rdoc/ri/paths.rb	2026-03-29 18:26:17.899483722 -0400
++++ ruby-3.1.4.b/lib/rdoc/ri/paths.rb	2026-03-29 19:40:47.857701415 -0400
 @@ -10,7 +10,7 @@ module RDoc::RI::Paths
    #:stopdoc:
    require 'rbconfig'
@@ -1469,7 +1481,7 @@ diff -Nuarp ruby-3.1.4.a/lib/rdoc/ri/paths.rb ruby-3.1.4.b/lib/rdoc/ri/paths.rb
  
 diff -Nuarp ruby-3.1.4.a/lib/rubygems/defaults.rb ruby-3.1.4.b/lib/rubygems/defaults.rb
 --- ruby-3.1.4.a/lib/rubygems/defaults.rb	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/lib/rubygems/defaults.rb	2026-03-29 18:26:17.900017691 -0400
++++ ruby-3.1.4.b/lib/rubygems/defaults.rb	2026-03-29 19:40:47.858234904 -0400
 @@ -34,7 +34,7 @@ module Gem
    # specified in the environment
  
@@ -1500,7 +1512,7 @@ diff -Nuarp ruby-3.1.4.a/lib/rubygems/defaults.rb ruby-3.1.4.b/lib/rubygems/defa
    ##
 diff -Nuarp ruby-3.1.4.a/loadpath.c ruby-3.1.4.b/loadpath.c
 --- ruby-3.1.4.a/loadpath.c	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/loadpath.c	2026-03-29 18:26:17.916070339 -0400
++++ ruby-3.1.4.b/loadpath.c	2026-03-29 19:40:47.872582101 -0400
 @@ -65,22 +65,38 @@ const char ruby_initial_load_paths[] =
      RUBY_SEARCH_PATH "\0"
  #endif
@@ -1542,7 +1554,7 @@ diff -Nuarp ruby-3.1.4.a/loadpath.c ruby-3.1.4.b/loadpath.c
  #ifdef RUBY_THINARCH
 diff -Nuarp ruby-3.1.4.a/miniprelude.c ruby-3.1.4.b/miniprelude.c
 --- ruby-3.1.4.a/miniprelude.c	2023-03-30 06:53:53.000000000 -0400
-+++ ruby-3.1.4.b/miniprelude.c	2026-03-29 18:26:57.735716945 -0400
++++ ruby-3.1.4.b/miniprelude.c	2026-03-29 19:41:12.866058338 -0400
 @@ -1,7 +1,7 @@
  /* -*-c-*-
   THIS FILE WAS AUTOGENERATED BY template/prelude.c.tmpl. DO NOT EDIT.
@@ -2306,7 +2318,7 @@ diff -Nuarp ruby-3.1.4.a/miniprelude.c ruby-3.1.4.b/miniprelude.c
  
 diff -Nuarp ruby-3.1.4.a/ruby.c ruby-3.1.4.b/ruby.c
 --- ruby-3.1.4.a/ruby.c	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/ruby.c	2026-03-29 18:26:17.924054063 -0400
++++ ruby-3.1.4.b/ruby.c	2026-03-29 19:40:47.879325527 -0400
 @@ -1623,10 +1623,14 @@ proc_options(long argc, char **argv, rub
  
  void Init_builtin_features(void);
@@ -2324,7 +2336,7 @@ diff -Nuarp ruby-3.1.4.a/ruby.c ruby-3.1.4.b/ruby.c
  
 diff -Nuarp ruby-3.1.4.a/spec/bundler/install/gemfile/specific_platform_spec.rb ruby-3.1.4.b/spec/bundler/install/gemfile/specific_platform_spec.rb
 --- ruby-3.1.4.a/spec/bundler/install/gemfile/specific_platform_spec.rb	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/spec/bundler/install/gemfile/specific_platform_spec.rb	2026-03-29 18:26:45.758377791 -0400
++++ ruby-3.1.4.b/spec/bundler/install/gemfile/specific_platform_spec.rb	2026-03-29 19:40:47.925059254 -0400
 @@ -104,6 +104,42 @@ RSpec.describe "bundle install with spec
        L
      end
@@ -2370,7 +2382,7 @@ diff -Nuarp ruby-3.1.4.a/spec/bundler/install/gemfile/specific_platform_spec.rb 
          build_gem("libv8", "8.4.255.0")
 diff -Nuarp ruby-3.1.4.a/template/ruby.pc.in ruby-3.1.4.b/template/ruby.pc.in
 --- ruby-3.1.4.a/template/ruby.pc.in	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/template/ruby.pc.in	2026-03-29 18:26:17.899278489 -0400
++++ ruby-3.1.4.b/template/ruby.pc.in	2026-03-29 19:40:47.857496851 -0400
 @@ -2,6 +2,7 @@ MAJOR=@MAJOR@
  MINOR=@MINOR@
  TEENY=@TEENY@
@@ -2381,7 +2393,7 @@ diff -Nuarp ruby-3.1.4.a/template/ruby.pc.in ruby-3.1.4.b/template/ruby.pc.in
  arch=@arch@
 diff -Nuarp ruby-3.1.4.a/template/verconf.h.tmpl ruby-3.1.4.b/template/verconf.h.tmpl
 --- ruby-3.1.4.a/template/verconf.h.tmpl	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/template/verconf.h.tmpl	2026-03-29 18:26:17.916290463 -0400
++++ ruby-3.1.4.b/template/verconf.h.tmpl	2026-03-29 19:40:47.872779234 -0400
 @@ -36,6 +36,9 @@
  % if C["RUBY_SEARCH_PATH"]
  #define RUBY_SEARCH_PATH		"${RUBY_SEARCH_PATH}"
@@ -2394,7 +2406,7 @@ diff -Nuarp ruby-3.1.4.a/template/verconf.h.tmpl ruby-3.1.4.b/template/verconf.h
  % R["ruby_version"] = '"RUBY_LIB_VERSION"'
 diff -Nuarp ruby-3.1.4.a/test/-ext-/bug_reporter/test_bug_reporter.rb ruby-3.1.4.b/test/-ext-/bug_reporter/test_bug_reporter.rb
 --- ruby-3.1.4.a/test/-ext-/bug_reporter/test_bug_reporter.rb	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/test/-ext-/bug_reporter/test_bug_reporter.rb	2026-03-29 18:26:17.933144124 -0400
++++ ruby-3.1.4.b/test/-ext-/bug_reporter/test_bug_reporter.rb	2026-03-29 19:40:47.884503176 -0400
 @@ -22,7 +22,7 @@ class TestBugReporter < Test::Unit::Test
      args = ["--disable-gems", "-r-test-/bug_reporter",
              "-C", tmpdir]
@@ -2406,7 +2418,7 @@ diff -Nuarp ruby-3.1.4.a/test/-ext-/bug_reporter/test_bug_reporter.rb ruby-3.1.4
    end
 diff -Nuarp ruby-3.1.4.a/test/ruby/test_gc_compact.rb ruby-3.1.4.b/test/ruby/test_gc_compact.rb
 --- ruby-3.1.4.a/test/ruby/test_gc_compact.rb	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/test/ruby/test_gc_compact.rb	2026-03-29 18:26:17.940609579 -0400
++++ ruby-3.1.4.b/test/ruby/test_gc_compact.rb	2026-03-29 19:40:47.891876623 -0400
 @@ -9,14 +9,7 @@ if RUBY_PLATFORM =~ /s390x/
  end
  
@@ -2492,7 +2504,7 @@ diff -Nuarp ruby-3.1.4.a/test/ruby/test_gc_compact.rb ruby-3.1.4.b/test/ruby/tes
    def test_gc_compact_stats
 diff -Nuarp ruby-3.1.4.a/test/ruby/test_weakmap.rb ruby-3.1.4.b/test/ruby/test_weakmap.rb
 --- ruby-3.1.4.a/test/ruby/test_weakmap.rb	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/test/ruby/test_weakmap.rb	2026-03-29 18:26:45.749377640 -0400
++++ ruby-3.1.4.b/test/ruby/test_weakmap.rb	2026-03-29 19:40:47.915429078 -0400
 @@ -178,6 +178,8 @@ class TestWeakMap < Test::Unit::TestCase
    end
  
@@ -2504,7 +2516,7 @@ diff -Nuarp ruby-3.1.4.a/test/ruby/test_weakmap.rb ruby-3.1.4.b/test/ruby/test_w
        GC.compact
 diff -Nuarp ruby-3.1.4.a/test/rubygems/test_gem.rb ruby-3.1.4.b/test/rubygems/test_gem.rb
 --- ruby-3.1.4.a/test/rubygems/test_gem.rb	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/test/rubygems/test_gem.rb	2026-03-29 18:26:17.900410548 -0400
++++ ruby-3.1.4.b/test/rubygems/test_gem.rb	2026-03-29 19:40:47.858579900 -0400
 @@ -1395,7 +1395,8 @@ class TestGem < Gem::TestCase
  
    def test_self_user_dir
@@ -2524,9 +2536,20 @@ diff -Nuarp ruby-3.1.4.a/test/rubygems/test_gem.rb ruby-3.1.4.b/test/rubygems/te
  
        assert_equal expected, Gem.vendor_dir
      end
+diff -Nuarp ruby-3.1.4.a/thread.c ruby-3.1.4.b/thread.c
+--- ruby-3.1.4.a/thread.c	2023-03-30 06:53:51.000000000 -0400
++++ ruby-3.1.4.b/thread.c	2026-03-29 19:41:00.299067860 -0400
+@@ -5624,6 +5624,7 @@ update_line_coverage(VALUE data, const r
+ 	VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
+ 	if (lines) {
+ 	    long line = rb_sourceline() - 1;
++        VM_ASSERT(line >= 0);
+ 	    long count;
+ 	    VALUE num;
+             void rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset);
 diff -Nuarp ruby-3.1.4.a/tool/mkconfig.rb ruby-3.1.4.b/tool/mkconfig.rb
 --- ruby-3.1.4.a/tool/mkconfig.rb	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/tool/mkconfig.rb	2026-03-29 18:26:17.904672769 -0400
++++ ruby-3.1.4.b/tool/mkconfig.rb	2026-03-29 19:40:47.863149598 -0400
 @@ -115,7 +115,7 @@ File.foreach "config.status" do |line|
      val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
      case name
@@ -2538,7 +2561,7 @@ diff -Nuarp ruby-3.1.4.a/tool/mkconfig.rb ruby-3.1.4.b/tool/mkconfig.rb
      when /^UNIVERSAL_ARCHNAMES$/
 diff -Nuarp ruby-3.1.4.a/tool/rbinstall.rb ruby-3.1.4.b/tool/rbinstall.rb
 --- ruby-3.1.4.a/tool/rbinstall.rb	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/tool/rbinstall.rb	2026-03-29 18:26:17.916439755 -0400
++++ ruby-3.1.4.b/tool/rbinstall.rb	2026-03-29 19:40:47.872920557 -0400
 @@ -359,6 +359,7 @@ if CONFIG["vendordir"]
    vendorlibdir = CONFIG["vendorlibdir"]
    vendorarchlibdir = CONFIG["vendorarchdir"]
@@ -2575,7 +2598,7 @@ diff -Nuarp ruby-3.1.4.a/tool/rbinstall.rb ruby-3.1.4.b/tool/rbinstall.rb
  install?(:local, :comm, :hdr, :'comm-hdr') do
 diff -Nuarp ruby-3.1.4.a/vm.c ruby-3.1.4.b/vm.c
 --- ruby-3.1.4.a/vm.c	2023-03-30 06:53:51.000000000 -0400
-+++ ruby-3.1.4.b/vm.c	2026-03-29 18:26:17.928803472 -0400
++++ ruby-3.1.4.b/vm.c	2026-03-29 19:40:47.882680185 -0400
 @@ -479,7 +479,15 @@ rb_dtrace_setup(rb_execution_context_t *
      }
      type = BUILTIN_TYPE(klass);
