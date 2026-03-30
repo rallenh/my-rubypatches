@@ -1,5 +1,15 @@
 Fedora Ruby / ruby-install / chruby notes
 
+03/29/2026: ruby-core isn't going to fix ruby 3.1.x series for new, updated
+modern gcc compliers, e.g. 15.x (15.2.1 on Fedora 42):
+https://github.com/ruby/io-console/issues/90#issuecomment-3213428696
+Ruby 3.1.x needs to be built with older gcc. On Fedora 42, I used gcc14/gcc14-c++
+and set the ENV knobs when using ruby-install via rbenv (see shell helper
+fedora-ruby-install-for-rbenv.sh).
+# install gcc 14 on Fedora 42 (its available for FC43/FC44:
+#   https://koji.fedoraproject.org/koji/packageinfo?packageID=41685)
+$ sudo dnf install gcc14 gcc14-c++
+
 need to fork chrub/ruby-install/gem_home. ruby-install needs update for newer autotools (configure.ac)
 
 Make sure there's no /usr/bin/ruby in the path.
@@ -65,10 +75,15 @@ patch -p1 -d ./ruby-3.1.6.b < ./fedora/ruby-3.2.0-Detect-compaction-support-duri
 patch -p1 -d ./ruby-3.1.6.b < ./fedora/ruby-irb-1.4.1-drop-rdoc-hard-dep.patch;
 patch -p1 -d ./ruby-3.1.6.b < ./fedora/ruby-irb-1.4.1-set-rdoc-soft-dep.patch;
 patch -p1 -d ./ruby-3.1.6.b < ./fedora/ruby-3.1.4-Skip-test_compaction_bug_19529-if-compaction-unsupported.patch;
+patch -p1 -d ./ruby-3.1.6.b < ./other/munmap_chunk-invalid-pointer.patch;
 patch -p1 -d ./ruby-3.1.6.b < ./railsexpress/01-improve-gc-stats.patch;
 patch -p1 -d ./ruby-3.1.6.b < ./railsexpress/02-malloc-trim.patch;
+# because the above Fedora patches also change gc.rbinc/miniprelude.c we
+# need to do an extra step: bring the ruby-3.1.4.a = ruby-3.1.4.b dir
 patch -p1 -d ./ruby-3.1.6.b < ./railsexpress/03-updated-miniprelude-for-gc-stats.patch;
 patch -p1 -d ./ruby-3.1.6.b < ./railsexpress/04-updated-gc.rbinc-for-gc-stats.patch;
+# because of the Fedora patches to gc.rb/gc.rbinc; restore the unpatched
+# original source: rm -rf ruby-3.1.4.a; tar -zxvf ruby-3.1.4.tar.gz; mv ruby-3.1.4 ruby-3.1.4.a
 diff -Nuarp ruby-3.1.6.a ruby-3.1.6.b > ruby-3.1.6-fedora-railsexpress-patches.patch;
 rm -rf ruby-3.1.6.a ruby-3.1.6.b;
 rm -rf ruby-3.1.6.tar.gz;
