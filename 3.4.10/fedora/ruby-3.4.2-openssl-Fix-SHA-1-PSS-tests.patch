@@ -61,7 +61,7 @@ diff --git a/test/openssl/test_pkey_rsa.rb b/test/openssl/test_pkey_rsa.rb
 index 360309b..850c16a 100644
 --- a/test/openssl/test_pkey_rsa.rb
 +++ b/test/openssl/test_pkey_rsa.rb
-@@ -108,13 +108,13 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
+@@ -108,13 +108,13 @@ def test_sign_verify_options
      pssopts = {
        "rsa_padding_mode" => "pss",
        "rsa_pss_saltlen" => 20,
@@ -77,7 +77,7 @@ index 360309b..850c16a 100644
      # Defaults to PKCS #1 v1.5 padding => verification failure
      assert_equal false, key.verify("SHA256", sig_pss, data)
  
-@@ -188,22 +188,22 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
+@@ -188,22 +188,22 @@ def test_sign_verify_pss
      data = "Sign me!"
      invalid_data = "Sign me?"
  
@@ -108,7 +108,7 @@ index 360309b..850c16a 100644
  
      # The sign_pss with `salt_length: :max` raises the "invalid salt length"
      # error in FIPS. We need to skip the tests in FIPS.
-@@ -213,18 +213,18 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
+@@ -213,18 +213,18 @@ def test_sign_verify_pss
      # FIPS 186-5 section 5.4 PKCS #1
      # https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf
      unless OpenSSL.fips_mode

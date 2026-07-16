@@ -1,6 +1,6 @@
 diff -Nuarp ruby-3.4.10.a/abrt.c ruby-3.4.10.b/abrt.c
 --- ruby-3.4.10.a/abrt.c	1969-12-31 19:00:00.000000000 -0500
-+++ ruby-3.4.10.b/abrt.c	2026-07-08 22:38:25.925860570 -0400
++++ ruby-3.4.10.b/abrt.c	2026-07-16 16:32:00.785952765 -0400
 @@ -0,0 +1,12 @@
 +#include "internal.h"
 +
@@ -16,7 +16,7 @@ diff -Nuarp ruby-3.4.10.a/abrt.c ruby-3.4.10.b/abrt.c
 +}
 diff -Nuarp ruby-3.4.10.a/common.mk ruby-3.4.10.b/common.mk
 --- ruby-3.4.10.a/common.mk	2026-06-30 06:54:35.000000000 -0400
-+++ ruby-3.4.10.b/common.mk	2026-07-08 22:38:30.549217740 -0400
++++ ruby-3.4.10.b/common.mk	2026-07-16 16:32:05.504406432 -0400
 @@ -110,7 +110,8 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
  		prism/prism.$(OBJEXT) \
  		prism_init.$(OBJEXT)
@@ -38,7 +38,7 @@ diff -Nuarp ruby-3.4.10.a/common.mk ruby-3.4.10.b/common.mk
  yes-test-bundler-precheck: main $(arch)-fake.rb
 diff -Nuarp ruby-3.4.10.a/configure.ac ruby-3.4.10.b/configure.ac
 --- ruby-3.4.10.a/configure.ac	2026-06-30 06:54:35.000000000 -0400
-+++ ruby-3.4.10.b/configure.ac	2026-07-08 22:38:21.256548090 -0400
++++ ruby-3.4.10.b/configure.ac	2026-07-16 16:31:55.998468595 -0400
 @@ -143,7 +143,7 @@ RUBY_BASE_NAME=`echo ruby | sed "$progra
  RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
  AC_SUBST(RUBY_BASE_NAME)
@@ -191,7 +191,7 @@ diff -Nuarp ruby-3.4.10.a/configure.ac ruby-3.4.10.b/configure.ac
      AS_IF([test "${rb_cv_architecture_available}" = yes], [
 diff -Nuarp ruby-3.4.10.a/lib/rdoc/ri/paths.rb ruby-3.4.10.b/lib/rdoc/ri/paths.rb
 --- ruby-3.4.10.a/lib/rdoc/ri/paths.rb	2026-06-30 06:54:35.000000000 -0400
-+++ ruby-3.4.10.b/lib/rdoc/ri/paths.rb	2026-07-08 22:38:00.015438057 -0400
++++ ruby-3.4.10.b/lib/rdoc/ri/paths.rb	2026-07-16 16:31:38.269646320 -0400
 @@ -10,7 +10,7 @@ module RDoc::RI::Paths
    #:stopdoc:
    require 'rbconfig'
@@ -203,7 +203,7 @@ diff -Nuarp ruby-3.4.10.a/lib/rdoc/ri/paths.rb ruby-3.4.10.b/lib/rdoc/ri/paths.r
  
 diff -Nuarp ruby-3.4.10.a/lib/rubygems/defaults.rb ruby-3.4.10.b/lib/rubygems/defaults.rb
 --- ruby-3.4.10.a/lib/rubygems/defaults.rb	2026-06-30 06:54:35.000000000 -0400
-+++ ruby-3.4.10.b/lib/rubygems/defaults.rb	2026-07-08 22:38:00.015662925 -0400
++++ ruby-3.4.10.b/lib/rubygems/defaults.rb	2026-07-16 16:31:38.269920052 -0400
 @@ -35,7 +35,7 @@ module Gem
    # specified in the environment
  
@@ -234,7 +234,7 @@ diff -Nuarp ruby-3.4.10.a/lib/rubygems/defaults.rb ruby-3.4.10.b/lib/rubygems/de
    ##
 diff -Nuarp ruby-3.4.10.a/loadpath.c ruby-3.4.10.b/loadpath.c
 --- ruby-3.4.10.a/loadpath.c	2026-06-30 06:54:35.000000000 -0400
-+++ ruby-3.4.10.b/loadpath.c	2026-07-08 22:38:21.256621070 -0400
++++ ruby-3.4.10.b/loadpath.c	2026-07-16 16:31:55.998562755 -0400
 @@ -65,22 +65,38 @@ const char ruby_initial_load_paths[] =
      RUBY_SEARCH_PATH "\0"
  #endif
@@ -276,7 +276,7 @@ diff -Nuarp ruby-3.4.10.a/loadpath.c ruby-3.4.10.b/loadpath.c
  #ifdef RUBY_THINARCH
 diff -Nuarp ruby-3.4.10.a/ruby.c ruby-3.4.10.b/ruby.c
 --- ruby-3.4.10.a/ruby.c	2026-06-30 06:54:35.000000000 -0400
-+++ ruby-3.4.10.b/ruby.c	2026-07-08 22:38:25.927576976 -0400
++++ ruby-3.4.10.b/ruby.c	2026-07-16 16:32:00.788053918 -0400
 @@ -1744,10 +1744,14 @@ proc_options(long argc, char **argv, rub
  
  void Init_builtin_features(void);
@@ -294,7 +294,7 @@ diff -Nuarp ruby-3.4.10.a/ruby.c ruby-3.4.10.b/ruby.c
  
 diff -Nuarp ruby-3.4.10.a/spec/ruby/core/kernel/require_spec.rb ruby-3.4.10.b/spec/ruby/core/kernel/require_spec.rb
 --- ruby-3.4.10.a/spec/ruby/core/kernel/require_spec.rb	2026-06-30 06:54:35.000000000 -0400
-+++ ruby-3.4.10.b/spec/ruby/core/kernel/require_spec.rb	2026-07-08 22:38:25.927619985 -0400
++++ ruby-3.4.10.b/spec/ruby/core/kernel/require_spec.rb	2026-07-16 16:32:00.788164319 -0400
 @@ -25,6 +25,8 @@ describe "Kernel#require" do
      out = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems --disable-did-you-mean')
      features = out.lines.map { |line| File.basename(line.chomp, '.*') }
@@ -306,7 +306,7 @@ diff -Nuarp ruby-3.4.10.a/spec/ruby/core/kernel/require_spec.rb ruby-3.4.10.b/sp
      features.reject! { |feature| feature.end_with?('-fake') }
 diff -Nuarp ruby-3.4.10.a/template/ruby.pc.in ruby-3.4.10.b/template/ruby.pc.in
 --- ruby-3.4.10.a/template/ruby.pc.in	2026-06-30 06:54:35.000000000 -0400
-+++ ruby-3.4.10.b/template/ruby.pc.in	2026-07-08 22:38:00.015389918 -0400
++++ ruby-3.4.10.b/template/ruby.pc.in	2026-07-16 16:31:38.269427854 -0400
 @@ -2,6 +2,7 @@ MAJOR=@MAJOR@
  MINOR=@MINOR@
  TEENY=@TEENY@
@@ -317,7 +317,7 @@ diff -Nuarp ruby-3.4.10.a/template/ruby.pc.in ruby-3.4.10.b/template/ruby.pc.in
  arch=@arch@
 diff -Nuarp ruby-3.4.10.a/template/verconf.h.tmpl ruby-3.4.10.b/template/verconf.h.tmpl
 --- ruby-3.4.10.a/template/verconf.h.tmpl	2026-06-30 06:54:35.000000000 -0400
-+++ ruby-3.4.10.b/template/verconf.h.tmpl	2026-07-08 22:38:21.256723199 -0400
++++ ruby-3.4.10.b/template/verconf.h.tmpl	2026-07-16 16:31:55.998669336 -0400
 @@ -36,6 +36,9 @@
  % if C["RUBY_SEARCH_PATH"]
  #define RUBY_SEARCH_PATH		"${RUBY_SEARCH_PATH}"
@@ -330,7 +330,7 @@ diff -Nuarp ruby-3.4.10.a/template/verconf.h.tmpl ruby-3.4.10.b/template/verconf
  % R["ruby_version"] = '"RUBY_LIB_VERSION"'
 diff -Nuarp ruby-3.4.10.a/test/openssl/test_pkey_rsa.rb ruby-3.4.10.b/test/openssl/test_pkey_rsa.rb
 --- ruby-3.4.10.a/test/openssl/test_pkey_rsa.rb	2026-06-30 06:54:35.000000000 -0400
-+++ ruby-3.4.10.b/test/openssl/test_pkey_rsa.rb	2026-07-08 22:38:34.992185993 -0400
++++ ruby-3.4.10.b/test/openssl/test_pkey_rsa.rb	2026-07-16 16:32:10.666584666 -0400
 @@ -108,13 +108,13 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PK
      pssopts = {
        "rsa_padding_mode" => "pss",
@@ -403,7 +403,7 @@ diff -Nuarp ruby-3.4.10.a/test/openssl/test_pkey_rsa.rb ruby-3.4.10.b/test/opens
  
 diff -Nuarp ruby-3.4.10.a/test/rubygems/test_gem.rb ruby-3.4.10.b/test/rubygems/test_gem.rb
 --- ruby-3.4.10.a/test/rubygems/test_gem.rb	2026-06-30 06:54:35.000000000 -0400
-+++ ruby-3.4.10.b/test/rubygems/test_gem.rb	2026-07-08 22:38:00.015856614 -0400
++++ ruby-3.4.10.b/test/rubygems/test_gem.rb	2026-07-16 16:31:38.270110483 -0400
 @@ -1365,7 +1365,8 @@ class TestGem < Gem::TestCase
  
    def test_self_user_dir
@@ -425,7 +425,7 @@ diff -Nuarp ruby-3.4.10.a/test/rubygems/test_gem.rb ruby-3.4.10.b/test/rubygems/
      end
 diff -Nuarp ruby-3.4.10.a/tool/mkconfig.rb ruby-3.4.10.b/tool/mkconfig.rb
 --- ruby-3.4.10.a/tool/mkconfig.rb	2026-06-30 06:54:35.000000000 -0400
-+++ ruby-3.4.10.b/tool/mkconfig.rb	2026-07-08 22:38:05.160846613 -0400
++++ ruby-3.4.10.b/tool/mkconfig.rb	2026-07-16 16:31:42.677036042 -0400
 @@ -116,7 +116,7 @@ File.foreach "config.status" do |line|
      val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
      case name
@@ -437,7 +437,7 @@ diff -Nuarp ruby-3.4.10.a/tool/mkconfig.rb ruby-3.4.10.b/tool/mkconfig.rb
      when /^UNIVERSAL_ARCHNAMES$/
 diff -Nuarp ruby-3.4.10.a/tool/rbinstall.rb ruby-3.4.10.b/tool/rbinstall.rb
 --- ruby-3.4.10.a/tool/rbinstall.rb	2026-06-30 06:54:35.000000000 -0400
-+++ ruby-3.4.10.b/tool/rbinstall.rb	2026-07-08 22:38:21.256810978 -0400
++++ ruby-3.4.10.b/tool/rbinstall.rb	2026-07-16 16:31:55.998770657 -0400
 @@ -382,6 +382,7 @@ if CONFIG["vendordir"]
    vendorlibdir = CONFIG["vendorlibdir"]
    vendorarchlibdir = CONFIG["vendorarchdir"]

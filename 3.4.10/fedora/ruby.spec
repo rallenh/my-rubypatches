@@ -1,6 +1,6 @@
 %global major_version 3
 %global minor_version 4
-%global teeny_version 1
+%global teeny_version 10
 %global major_minor_version %{major_version}.%{minor_version}
 
 %global ruby_version %{major_minor_version}.%{teeny_version}
@@ -27,7 +27,7 @@
 %global rubygems_dir %{_datadir}/rubygems
 
 # Bundled libraries versions
-%global rubygems_version 3.6.2
+%global rubygems_version 3.6.9
 %global rubygems_molinillo_version 0.8.0
 %global rubygems_net_http_version 0.6.0
 %global rubygems_net_protocol_version 0.2.2
@@ -36,53 +36,53 @@
 %global rubygems_securerandom_version 0.4.1
 %global rubygems_timeout_version 0.4.3
 %global rubygems_tsort_version 0.2.0
-%global rubygems_uri_version 1.0.2
+%global rubygems_uri_version 1.0.4
 
 # Default gems.
-%global bundler_version 2.6.2
-%global bundler_connection_pool_version 2.4.1
+%global bundler_version 2.6.9
+%global bundler_connection_pool_version 2.5.0
 %global bundler_fileutils_version 1.7.3
 %global bundler_net_http_persistent_version 4.0.4
 %global bundler_pub_grub_version 0.5.0
 %global bundler_securerandom_version 0.4.1
 %global bundler_thor_version 1.3.2
 %global bundler_tsort_version 0.2.0
-%global bundler_uri_version 1.0.2
+%global bundler_uri_version 1.0.4
 
 %global benchmark_version 0.4.0
-%global cgi_version 0.4.1
+%global cgi_version 0.4.2
 %global date_version 3.4.1
 %global delegate_version 0.4.0
 %global did_you_mean_version 2.0.0
 %global digest_version 3.2.0
 %global english_version 0.8.0
-%global erb_version 4.0.4
+%global erb_version 4.0.4.1
 %global error_highlight_version 0.7.0
-%global etc_version 1.4.5
+%global etc_version 1.4.6
 %global fcntl_version 1.2.0
 %global fiddle_version 1.1.6
 %global fileutils_version 1.7.3
 %global find_version 0.2.0
 %global forwardable_version 1.3.3
-%global io_nonblock_version 0.3.1
-%global io_wait_version 0.3.1
+%global io_nonblock_version 0.3.2
+%global io_wait_version 0.3.2
 %global ipaddr_version 1.2.7
 %global logger_version 1.6.4
 %global net_http_version 0.6.0
 %global net_protocol_version 0.2.2
 %global open3_version 0.2.1
-%global openssl_version 3.3.0
+%global openssl_version 3.3.3
 %global open_uri_version 0.5.0
 %global optparse_version 0.6.0
 %global ostruct_version 0.6.1
 %global pathname_version 0.4.0
 %global pp_version 0.6.2
 %global prettyprint_version 0.2.0
-%global prism_version 1.2.0
-%global pstore_version 0.1.4
+%global prism_version 1.5.3
+%global pstore_version 0.2.1
 %global readline_version 0.0.4
 %global reline_version 0.6.0
-%global resolv_version 0.6.0
+%global resolv_version 0.7.1
 %global ruby2_keywords_version 0.0.5
 %global securerandom_version 0.4.1
 %global set_version 1.1.1
@@ -90,40 +90,39 @@
 %global singleton_version 0.3.0
 %global stringio_version 3.1.2
 %global strscan_version 3.1.2
-%global syntax_suggest_version 2.0.2
-%global syslog_version 0.2.0
+%global syntax_suggest_version 2.0.3
 %global tempfile_version 0.3.1
 %global time_version 0.4.1
 %global timeout_version 0.4.3
 %global tmpdir_version 0.3.1
 %global tsort_version 0.2.0
 %global un_version 0.3.0
-%global uri_version 1.0.2
+%global uri_version 1.0.4
 %global weakref_version 0.1.3
 %global win32ole_version 1.9.1
 %global win32_registry_version 0.1.0
 %global yaml_version 0.4.0
-%global zlib_version 3.2.1
+%global zlib_version 3.2.3
 
 # Gemified default gems.
-%global io_console_version 0.8.0
+%global io_console_version 0.8.1
 %global irb_version 1.14.3
 %global json_version 2.9.1
 %global psych_version 5.2.2
-%global rdoc_version 6.10.0
+%global rdoc_version 6.14.0
 
 # Bundled gems.
 %global abbrev_version 0.1.2
 %global base64_version 0.2.0
 %global bigdecimal_version 3.1.8
 %global csv_version 3.3.2
-%global debug_version 1.10.0
+%global debug_version 1.11.0
 %global drb_version 2.2.1
 %global getoptlong_version 0.2.1
 %global net_ftp_version 0.3.8
-%global net_imap_version 0.5.4
+%global net_imap_version 0.5.15
 %global net_pop_version 0.1.2
-%global net_smtp_version 0.5.0
+%global net_smtp_version 0.5.1
 %global nkf_version 0.2.0
 %global matrix_version 0.4.2
 %global minitest_version 5.25.4
@@ -136,7 +135,7 @@
 %global rbs_version 3.8.0
 %global repl_type_completor_version 0.1.9
 %global resolv_replace_version 0.1.1
-%global rexml_version 3.4.0
+%global rexml_version 3.4.4
 %global rinda_version 0.2.0
 %global rss_version 0.3.1
 %global syslog_version 0.2.0
@@ -165,6 +164,7 @@
 %endif
 # Enable test when building on local.
 %bcond_with bundler_tests
+%bcond_without parallel_tests
 
 %if 0%{?fedora}
 %bcond_without hardening_test
@@ -177,7 +177,7 @@
 Summary: An interpreter of object-oriented scripting language
 Name: ruby
 Version: %{ruby_version}%{?development_release}
-Release: 21%{?dist}
+Release: 31%{?dist}
 # Licenses, which are likely not included in binary RPMs:
 # Apache-2.0:
 #   benchmark/gc/redblack.rb
@@ -186,10 +186,10 @@ Release: 21%{?dist}
 # GPL-1.0-or-later: ext/win32/lib/win32/sspi.rb
 # GPL-1.0-or-later OR Artistic-1.0-Perl: win32/win32.c, include/ruby/win32.h,
 #   ext/win32ole/win32ole.c
-#
-# Licenses under review:
+# IETF (this is not official SPDX identifier)
 #   .bundle/gems/net-imap-0.4.9/LICENSE.txt
-#   https://gitlab.com/fedora/legal/fedora-license-data/-/issues/506
+#     Licenses in this file covers fair use and don't need to be listed:
+#     https://gitlab.com/fedora/legal/fedora-license-data/-/issues/506
 #
 # BSD-3-Clause: missing/{crypt,mt19937,setproctitle}.c, addr2line.c:2652
 # CC0: ccan/{build_assert/build_assert.h,check_type/check_type.h,
@@ -278,6 +278,9 @@ Patch6: ruby-2.7.0-Initialize-ABRT-hook.patch
 # Disable syntax_suggest test suite, which tries to download its dependencies.
 # https://bugs.ruby-lang.org/issues/19297
 Patch9: ruby-3.3.0-Disable-syntax-suggest-test-case.patch
+# Fix the tests using SHA-1 Probabilistic Signature Scheme (PSS) parameters.
+# https://github.com/ruby/openssl/pull/879
+Patch10: ruby-3.4.2-openssl-Fix-SHA-1-PSS-tests.patch
 
 Requires: %{name}-libs%{?_isa} = %{version}-%{release}
 %{?with_rubypick:Suggests: rubypick}
@@ -291,6 +294,7 @@ BuildRequires: autoconf
 BuildRequires: gcc
 BuildRequires: make
 BuildRequires: libffi-devel
+BuildRequires: libxcrypt-devel
 BuildRequires: libyaml-devel
 BuildRequires: openssl-devel
 BuildRequires: zlib-devel
@@ -577,6 +581,7 @@ Provides:   bundled(rubygem-net-http-persistent) = %{bundler_net_http_persistent
 Provides:   bundled(rubygem-pub_grub) = %{bundler_pub_grub_version}
 Provides:   bundled(rubygem-securerandom) = %{bundler_securerandom_version}
 Provides:   bundled(rubygem-thor) = %{bundler_thor_version}
+Provides:   bundled(rubygem-tsort) = %{bundler_tsort_version}
 Provides:   bundled(rubygem-uri) = %{bundler_uri_version}
 BuildArch:  noarch
 
@@ -769,6 +774,7 @@ analysis result in RBS format, a standard type description format for Ruby
 %patch 4 -p1
 %patch 6 -p1
 %patch 9 -p1
+%patch 10 -p1
 
 # Provide an example of usage of the tapset:
 cp -a %{SOURCE3} .
@@ -1206,7 +1212,7 @@ MSPECOPTS=""
 # Give an option to increase the timeout in tests.
 # https://bugs.ruby-lang.org/issues/16921
 %{?test_timeout_scale:RUBY_TEST_TIMEOUT_SCALE="%{test_timeout_scale}"} \
-  make -C %{_vpath_builddir} check TESTS="-v --show-skip $DISABLE_TESTS" MSPECOPT="-fs $MSPECOPTS"
+  make -C %{_vpath_builddir} %{?with_parallel_tests:%{?_smp_mflags}} check TESTS="-v --show-skip $DISABLE_TESTS" MSPECOPT="-fs $MSPECOPTS"
 
 # Run Ruby OpenSSL tests in OpenSSL FIPS.
 make -C %{_vpath_builddir} runruby TESTRUN_SCRIPT=" \
@@ -1525,7 +1531,6 @@ make -C %{_vpath_builddir} runruby TESTRUN_SCRIPT=" \
 
 %files doc -f .ruby-doc.en -f .ruby-doc.ja
 %doc README.md
-%doc ChangeLog
 %{?with_systemtap:%doc ruby-exercise.stp}
 %{_datadir}/ri
 
@@ -1874,6 +1879,60 @@ make -C %{_vpath_builddir} runruby TESTRUN_SCRIPT=" \
 
 
 %changelog
+* Wed Jul 08 2026 Mamoru TASAKA <mtasaka@fedoraproject.org> - 3.4.10-31
+- Update to Ruby 3.4.10
+- Resolves: CVE-2026-41316 (rhbz#2463216)
+- Resolves: CVE-2026-42245 (rhbz#2484324)
+- Resolves: CVE-2026-42246 (rhbz#2492090)
+- Resolves: CVE-2026-42256
+- Resolves: CVE-2026-42257
+- Resolves: CVE-2026-42258 (rhbz#2487319)
+- Resolves: CVE-2026-47240
+- Resolves: CVE-2026-47241
+- Resolves: CVE-2026-47242
+
+* Mon Jun 29 2026 Mamoru TASAKA <mtasaka@fedoraproject.org> - 3.4.9-30
+- Update to Ruby 3.4.9
+- Resolves: CVE-2026-27820
+
+* Wed Dec 17 2025 Vít Ondruch <vondruch@redhat.com> - 3.4.8-29
+- Update to Ruby 3.4.8.
+  Resolves: rhbz#2422963
+  Resolves: rhbz#2412227
+
+* Thu Oct 30 2025 Jun Aruga <jaruga@redhat.com> - 3.4.7-28
+- Upgrade to Ruby 3.4.7.
+- Fix URI Credential Leakage Bypass previous fixes.
+  Resolves: CVE-2025-61594
+- Fix REXML denial of service.
+  Resolves: CVE-2025-58767
+
+* Tue Aug 19 2025 Jarek Prokop <jprokop@redhat.com> - 3.4.5-27
+- Upgrade to Ruby 3.4.5.
+  Resolves: rhbz#2389202
+
+* Fri Jul 25 2025 Fedora Release Engineering <releng@fedoraproject.org>
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_43_Mass_Rebuild
+
+* Wed Jun 11 2025 Jarek Prokop <jprokop@redhat.com> - 3.4.4-25
+- Upgrade to Ruby 3.4.4.
+  Resolves: rhbz#2359563
+
+* Tue Apr 08 2025 Jun Aruga <jaruga@redhat.com> - 3.4.2-24
+- Fix the tests using SHA-1 Probabilistic Signature Scheme (PSS) parameters.
+  Resolves: rhbz#2358256
+
+* Wed Feb 19 2025 Vít Ondruch <vondruch@redhat.com> - 3.4.2-23
+- Upgrade to Ruby 3.4.2.
+  Resolves: rhbz#2345875
+
+* Sat Feb 01 2025 Björn Esser <besser82@fedoraproject.org> - 3.4.1-23
+- Add explicit BR: libxcrypt-devel
+
+* Fri Jan 24 2025 Jarek Prokop <jprokop@redhat.com> - 3.4.1-22
+- Stop including <cstdbool> C++ header, it is deprecated since C++17.
+  Resolves: rhbz#2336567
+
 * Sat Jan 18 2025 Fedora Release Engineering <releng@fedoraproject.org>
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_42_Mass_Rebuild
 
