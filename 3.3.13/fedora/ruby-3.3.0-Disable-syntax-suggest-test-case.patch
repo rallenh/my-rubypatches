@@ -1,0 +1,22 @@
+From 6365d1b79e10330fced83d00d4cb950380a3b0fe Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?V=C3=ADt=20Ondruch?= <vondruch@redhat.com>
+Date: Thu, 7 Sep 2023 13:13:02 +0200
+Subject: [PATCH] Disable syntax-suggest test case.
+
+This requires internet connection.
+---
+ common.mk | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff -Nuarp ruby-3.3.13.a/common.mk ruby-3.3.13.b/common.mk
+--- ruby-3.3.13.a/common.mk     2026-11-19 11:29:05.189644756 -0500
++++ ruby-3.3.13.b/common.mk     2026-11-19 11:28:43.023865746 -0500
+@@ -1585,8 +1585,6 @@ test-bundled-gems-run: $(PREPARE_BUNDLED
+
+ test-syntax-suggest:
+
+-check: $(DOT_WAIT) $(PREPARE_SYNTAX_SUGGEST) test-syntax-suggest
+-
+ test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
+ no-test-bundler-precheck:
+ yes-test-bundler-precheck: main $(arch)-fake.rb
