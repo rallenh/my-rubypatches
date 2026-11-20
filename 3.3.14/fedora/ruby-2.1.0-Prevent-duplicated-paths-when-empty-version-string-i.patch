@@ -1,0 +1,75 @@
+From e24d97c938c481450ed80ec83e5399595946c1ae Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?V=C3=ADt=20Ondruch?= <vondruch@redhat.com>
+Date: Fri, 8 Feb 2013 22:48:41 +0100
+Subject: [PATCH] Prevent duplicated paths when empty version string is
+ configured.
+
+---
+ configure.ac     |  3 ++-
+ loadpath.c       | 12 ++++++++++++
+ tool/mkconfig.rb |  2 +-
+ 3 files changed, 15 insertions(+), 2 deletions(-)
+
+diff -Nuarp ruby-3.3.13.a/configure.ac ruby-3.3.13.b/configure.ac
+--- ruby-3.3.13.a/configure.ac  2026-11-19 11:15:36.359787766 -0500
++++ ruby-3.3.13.b/configure.ac  2026-11-19 11:15:20.623846250 -0500
+@@ -4317,7 +4317,8 @@ AS_CASE(["$ruby_version_dir_name"],
+ ruby_version_dir=/'${ruby_version_dir_name}'
+
+ if test -z "${ruby_version_dir_name}"; then
+-    AC_MSG_ERROR([No ruby version, No place for bundled libraries])
++    unset ruby_version_dir
++    AC_DEFINE(RUBY_LIB_VERSION_BLANK, 1)
+ fi
+
+ rubylibdir='${rubylibprefix}'${ruby_version_dir}
+diff -Nuarp ruby-3.3.13.a/loadpath.c ruby-3.3.13.b/loadpath.c
+--- ruby-3.3.13.a/loadpath.c    2026-10-22 23:17:41.000000000 -0400
++++ ruby-3.3.13.b/loadpath.c    2026-11-19 11:15:20.624001262 -0500
+@@ -65,22 +65,34 @@ const char ruby_initial_load_paths[] =
+     RUBY_SEARCH_PATH "\0"
+ #endif
+ #ifndef NO_RUBY_SITE_LIB
++#ifdef RUBY_LIB_VERSION_BLANK
++    RUBY_SITE_LIB "\0"
++#else
+     RUBY_SITE_LIB2 "\0"
++#endif
+ #ifdef RUBY_THINARCH
+     RUBY_SITE_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+ #endif
+     RUBY_SITE_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
++#ifndef RUBY_LIB_VERSION_BLANK
+     RUBY_SITE_LIB "\0"
+ #endif
++#endif
+
+ #ifndef NO_RUBY_VENDOR_LIB
++#ifdef RUBY_LIB_VERSION_BLANK
++    RUBY_VENDOR_LIB "\0"
++#else
+     RUBY_VENDOR_LIB2 "\0"
++#endif
+ #ifdef RUBY_THINARCH
+     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+ #endif
+     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
++#ifndef RUBY_LIB_VERSION_BLANK
+     RUBY_VENDOR_LIB "\0"
+ #endif
++#endif
+
+     RUBY_LIB "\0"
+ #ifdef RUBY_THINARCH
+diff -Nuarp ruby-3.3.13.a/tool/mkconfig.rb ruby-3.3.13.b/tool/mkconfig.rb
+--- ruby-3.3.13.a/tool/mkconfig.rb      2026-10-22 23:17:41.000000000 -0400
++++ ruby-3.3.13.b/tool/mkconfig.rb      2026-11-19 11:15:20.624128413 -0500
+@@ -115,7 +115,7 @@ File.foreach "config.status" do |line|
+     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
+     case name
+     when /^prefix$/
+-      val = "(TOPDIR || DESTDIR + #{val})"
++      val = "(((TOPDIR && TOPDIR.empty?) ? nil : TOPDIR) || DESTDIR + #{val})"
+     when /^ARCH_FLAG$/
+       val = "arch_flag || #{val}" if universal
+     when /^UNIVERSAL_ARCHNAMES$/
