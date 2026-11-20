@@ -1,0 +1,940 @@
+diff -Nuarp ruby-3.4.13.a/abrt.c ruby-3.4.13.b/abrt.c
+--- ruby-3.4.13.a/abrt.c	1969-12-31 19:00:00.000000000 -0500
++++ ruby-3.4.13.b/abrt.c	2026-11-20 02:04:45.966934114 -0500
+@@ -0,0 +1,12 @@
++#include "internal.h"
++
++void
++Init_abrt(void)
++{
++  rb_eval_string(
++    "  begin\n"
++    "    require 'abrt'\n"
++    "  rescue LoadError\n"
++    "  end\n"
++  );
++}
+diff -Nuarp ruby-3.4.13.a/common.mk ruby-3.4.13.b/common.mk
+--- ruby-3.4.13.a/common.mk	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/common.mk	2026-11-20 02:04:49.966599065 -0500
+@@ -110,7 +110,8 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
+ 		prism/prism.$(OBJEXT) \
+ 		prism_init.$(OBJEXT)
+ 
+-COMMONOBJS    = array.$(OBJEXT) \
++COMMONOBJS    = abrt.$(OBJEXT) \
++                array.$(OBJEXT) \
+ 		ast.$(OBJEXT) \
+ 		bignum.$(OBJEXT) \
+ 		class.$(OBJEXT) \
+@@ -1667,8 +1668,6 @@ no-test-bundled-gems-spec:
+ 
+ test-syntax-suggest:
+ 
+-check: $(DOT_WAIT) $(PREPARE_SYNTAX_SUGGEST) test-syntax-suggest
+-
+ test-bundler-precheck: $(TEST_RUNNABLE)-test-bundler-precheck
+ no-test-bundler-precheck:
+ yes-test-bundler-precheck: main $(arch)-fake.rb
+diff -Nuarp ruby-3.4.13.a/configure.ac ruby-3.4.13.b/configure.ac
+--- ruby-3.4.13.a/configure.ac	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/configure.ac	2026-11-20 02:04:41.928753927 -0500
+@@ -143,7 +143,7 @@ RUBY_BASE_NAME=`echo ruby | sed "$progra
+ RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
+ AC_SUBST(RUBY_BASE_NAME)
+ AC_SUBST(RUBYW_BASE_NAME)
+-AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version}')
++AC_SUBST(RUBY_VERSION_NAME, '${RUBY_BASE_NAME}-${ruby_version_dir_name}')
+ 
+ dnl checks for alternative programs
+ AC_CANONICAL_BUILD
+@@ -3515,6 +3515,11 @@ AS_IF([test ${multiarch+set}], [
+ ])
+ 
+ archlibdir='${libdir}/${arch}'
++AC_ARG_WITH(archlibdir,
++	    AS_HELP_STRING([--with-archlibdir=DIR],
++			   [prefix for libruby [[LIBDIR/ARCH]]]),
++	    [archlibdir="$withval"])
++
+ sitearchlibdir='${libdir}/${sitearch}'
+ archincludedir='${includedir}/${arch}'
+ sitearchincludedir='${includedir}/${sitearch}'
+@@ -4312,9 +4317,6 @@ AS_CASE(["$target_os"],
+     rubyw_install_name='$(RUBYW_INSTALL_NAME)'
+     ])
+ 
+-rubylibdir='${rubylibprefix}/${ruby_version}'
+-rubyarchdir=${multiarch+'${rubyarchprefix}/${ruby_version}'}${multiarch-'${rubylibdir}/${arch}'}
+-
+ rubyarchprefix=${multiarch+'${archlibdir}/${RUBY_BASE_NAME}'}${multiarch-'${rubylibprefix}/${arch}'}
+ AC_ARG_WITH(rubyarchprefix,
+ 	    AS_HELP_STRING([--with-rubyarchprefix=DIR],
+@@ -4337,57 +4339,68 @@ AC_ARG_WITH(ridir,
+ AC_SUBST(ridir)
+ AC_SUBST(RI_BASE_NAME)
+ 
+-AC_ARG_WITH(ruby-version,
+-	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|minor|STR)]),
+-            [ruby_version=$withval],
+-            [ruby_version=full])
+ unset RUBY_LIB_VERSION
+-unset RUBY_LIB_VERSION_STYLE
+-AS_CASE(["$ruby_version"],
+-  [full],  [RUBY_LIB_VERSION_STYLE='3	/* full */'],
+-  [minor], [RUBY_LIB_VERSION_STYLE='2	/* minor */'])
+-AS_IF([test ${RUBY_LIB_VERSION_STYLE+set}], [
+-    {
+-    echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
+-    echo '@%:@include "confdefs.h"'
+-    echo '#define STRINGIZE(x) x'
+-    test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
+-    echo '#include "version.h"'
+-    echo 'ruby_version=RUBY_LIB_VERSION'
+-    } > conftest.c
+-    ruby_version="`$CPP -I. -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
+-    eval $ruby_version
+-], [test -z "${ruby_version}"], [
+-    AC_MSG_ERROR([No ruby version, No place for bundled libraries])
+-], [
+-    RUBY_LIB_VERSION="${ruby_version}"
+-])
++RUBY_LIB_VERSION_STYLE='3	/* full */'
++{
++echo "#define RUBY_LIB_VERSION_STYLE $RUBY_LIB_VERSION_STYLE"
++echo '@%:@include "confdefs.h"'
++echo '#define STRINGIZE(x) x'
++test -f revision.h -o -f "${srcdir}/revision.h" || echo '#define RUBY_REVISION 0'
++echo '#include "version.h"'
++echo 'ruby_version=RUBY_LIB_VERSION'
++} > conftest.c
++ruby_version="`$CPP -I. -I"${srcdir}" -I"${srcdir}/include" conftest.c | sed '/^ruby_version=/!d;s/ //g'`"
++eval $ruby_version
++
++RUBY_LIB_VERSION="${ruby_version}"
++
+ AC_SUBST(RUBY_LIB_VERSION_STYLE)
+ AC_SUBST(RUBY_LIB_VERSION)
+ 
++AC_ARG_WITH(ruby-version,
++	    AS_HELP_STRING([--with-ruby-version=STR], [ruby version string for version specific directories [[full]] (full|STR)]),
++            [ruby_version_dir_name=$withval],
++            [ruby_version_dir_name=full])
++AS_CASE(["$ruby_version_dir_name"],
++  [full], [ruby_version_dir_name='${ruby_version}'])
++
++ruby_version_dir=/'${ruby_version_dir_name}'
++
++if test -z "${ruby_version_dir_name}"; then
++    unset ruby_version_dir
++    AC_DEFINE(RUBY_LIB_VERSION_BLANK, 1)
++fi
++
++rubylibdir='${rubylibprefix}'${ruby_version_dir}
++rubyarchdir=${multiarch+'${rubyarchprefix}'${ruby_version_dir}}${multiarch-'${rubylibdir}/${arch}'}
++
+ AC_ARG_WITH(sitedir,
+ 	    AS_HELP_STRING([--with-sitedir=DIR], [site libraries in DIR [[RUBY_LIB_PREFIX/site_ruby]], "no" to disable site directory]),
+             [sitedir=$withval],
+             [sitedir='${rubylibprefix}/site_ruby'])
+-sitelibdir='${sitedir}/${ruby_version}'
++sitelibdir='${sitedir}'${ruby_version_dir}
+ 
+ AC_ARG_WITH(sitearchdir,
+ 	    AS_HELP_STRING([--with-sitearchdir=DIR],
+ 			   [architecture dependent site libraries in DIR [[SITEDIR/SITEARCH]], "no" to disable site directory]),
+             [sitearchdir=$withval],
+-            [sitearchdir=${multiarch+'${rubysitearchprefix}/site_ruby/${ruby_version}'}${multiarch-'${sitelibdir}/${sitearch}'}])
++            [sitearchdir=${multiarch+'${rubysitearchprefix}/site_ruby'${ruby_version_dir}}${multiarch-'${sitelibdir}/${sitearch}'}])
+ 
+ AC_ARG_WITH(vendordir,
+ 	    AS_HELP_STRING([--with-vendordir=DIR], [vendor libraries in DIR [[RUBY_LIB_PREFIX/vendor_ruby]], "no" to disable vendor directory]),
+             [vendordir=$withval],
+             [vendordir='${rubylibprefix}/vendor_ruby'])
+-vendorlibdir='${vendordir}/${ruby_version}'
++vendorlibdir='${vendordir}'${ruby_version_dir}
+ 
+ AC_ARG_WITH(vendorarchdir,
+ 	    AS_HELP_STRING([--with-vendorarchdir=DIR],
+ 			   [architecture dependent vendor libraries in DIR [[VENDORDIR/SITEARCH]], "no" to disable vendor directory]),
+             [vendorarchdir=$withval],
+-            [vendorarchdir=${multiarch+'${rubysitearchprefix}/vendor_ruby/${ruby_version}'}${multiarch-'${vendorlibdir}/${sitearch}'}])
++            [vendorarchdir=${multiarch+'${rubysitearchprefix}/vendor_ruby'${ruby_version_dir}}${multiarch-'${vendorlibdir}/${sitearch}'}])
++
++AC_ARG_WITH(rubygemsdir,
++           AS_HELP_STRING([--with-rubygemsdir=DIR], [custom rubygems directory]),
++            [rubygemsdir=$withval])
+ 
+ AS_IF([test "${LOAD_RELATIVE+set}"], [
+     AC_DEFINE_UNQUOTED(LOAD_RELATIVE, $LOAD_RELATIVE)
+@@ -4404,6 +4417,7 @@ AC_SUBST(sitearchincludedir)dnl
+ AC_SUBST(arch)dnl
+ AC_SUBST(sitearch)dnl
+ AC_SUBST(ruby_version)dnl
++AC_SUBST(ruby_version_dir_name)dnl
+ AC_SUBST(rubylibdir)dnl
+ AC_SUBST(rubyarchdir)dnl
+ AC_SUBST(sitedir)dnl
+@@ -4412,10 +4426,13 @@ AC_SUBST(sitearchdir)dnl
+ AC_SUBST(vendordir)dnl
+ AC_SUBST(vendorlibdir)dnl
+ AC_SUBST(vendorarchdir)dnl
++AC_SUBST(rubygemsdir)dnl
+ 
+ AC_SUBST(CONFIGURE, "`echo $0 | sed 's|.*/||'`")dnl
+ AC_SUBST(configure_args, "`echo "${ac_configure_args}" | sed 's/\\$/$$/g'`")dnl
+ 
++target_cpu=`echo $target_cpu | sed s/i.86/i386/`
++
+ AS_IF([test "${universal_binary-no}" = yes ], [
+     arch="universal-${target_os}"
+     AS_IF([test "${rb_cv_architecture_available}" = yes], [
+diff -Nuarp ruby-3.4.13.a/lib/rdoc/ri/paths.rb ruby-3.4.13.b/lib/rdoc/ri/paths.rb
+--- ruby-3.4.13.a/lib/rdoc/ri/paths.rb	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/lib/rdoc/ri/paths.rb	2026-11-20 02:04:27.689264466 -0500
+@@ -10,7 +10,7 @@ module RDoc::RI::Paths
+   #:stopdoc:
+   require 'rbconfig'
+ 
+-  version = RbConfig::CONFIG['ruby_version']
++  version = RbConfig::CONFIG['ruby_version_dir_name'] || RbConfig::CONFIG['ruby_version']
+ 
+   BASE    = File.join RbConfig::CONFIG['ridir'], version
+ 
+diff -Nuarp ruby-3.4.13.a/lib/rubygems/defaults.rb ruby-3.4.13.b/lib/rubygems/defaults.rb
+--- ruby-3.4.13.a/lib/rubygems/defaults.rb	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/lib/rubygems/defaults.rb	2026-11-20 02:04:27.689563964 -0500
+@@ -35,7 +35,7 @@ module Gem
+   # specified in the environment
+ 
+   def self.default_dir
+-    @default_dir ||= File.join(RbConfig::CONFIG["rubylibprefix"], "gems", RbConfig::CONFIG["ruby_version"])
++    @default_dir ||= File.join(RbConfig::CONFIG["rubylibprefix"], "gems", RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"])
+   end
+ 
+   ##
+@@ -104,7 +104,8 @@ module Gem
+     gem_dir = File.join(Gem.user_home, ".gem")
+     gem_dir = File.join(Gem.data_home, "gem") unless File.exist?(gem_dir)
+     parts = [gem_dir, ruby_engine]
+-    parts << RbConfig::CONFIG["ruby_version"] unless RbConfig::CONFIG["ruby_version"].empty?
++    ruby_version_dir_name = RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"]
++    parts << ruby_version_dir_name unless ruby_version_dir_name.empty?
+     File.join parts
+   end
+ 
+@@ -265,7 +266,7 @@ module Gem
+     return nil unless RbConfig::CONFIG.key? "vendordir"
+ 
+     File.join RbConfig::CONFIG["vendordir"], "gems",
+-              RbConfig::CONFIG["ruby_version"]
++              RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"]
+   end
+ 
+   ##
+diff -Nuarp ruby-3.4.13.a/lib/rubygems/vendor/resolv/lib/resolv.rb ruby-3.4.13.b/lib/rubygems/vendor/resolv/lib/resolv.rb
+--- ruby-3.4.13.a/lib/rubygems/vendor/resolv/lib/resolv.rb	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/lib/rubygems/vendor/resolv/lib/resolv.rb	2026-11-20 02:04:58.029311224 -0500
+@@ -4,6 +4,7 @@ require 'socket'
+ require_relative '../../timeout/lib/timeout'
+ require 'io/wait'
+ require_relative '../../../vendored_securerandom'
++require 'rbconfig'
+ 
+ # Gem::Resolv is a thread-aware DNS resolver library written in Ruby.  Gem::Resolv can
+ # handle multiple DNS requests concurrently without blocking the entire Ruby
+@@ -33,7 +34,8 @@ require_relative '../../../vendored_secu
+ 
+ class Gem::Resolv
+ 
+-  VERSION = "0.6.0"
++  # The version string
++  VERSION = "0.7.2"
+ 
+   ##
+   # Looks up the first IP address for +name+.
+@@ -177,14 +179,15 @@ class Gem::Resolv
+   # Gem::Resolv::Hosts is a hostname resolver that uses the system hosts file.
+ 
+   class Hosts
+-    if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM and
++    if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
+       begin
+-        require 'win32/resolv'
+-        DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
++        require 'win32/resolv' unless defined?(Win32::Resolv)
++        hosts = Win32::Resolv.get_hosts_path || IO::NULL
+       rescue LoadError
+       end
+     end
+-    DefaultFileName ||= '/etc/hosts'
++    # The default file name for host names
++    DefaultFileName = hosts || '/etc/hosts'
+ 
+     ##
+     # Creates a new Gem::Resolv::Hosts, using +filename+ for its data source.
+@@ -484,13 +487,18 @@ class Gem::Resolv
+     # * Gem::Resolv::DNS::Resource::IN::A
+     # * Gem::Resolv::DNS::Resource::IN::AAAA
+     # * Gem::Resolv::DNS::Resource::IN::ANY
++    # * Gem::Resolv::DNS::Resource::IN::CAA
+     # * Gem::Resolv::DNS::Resource::IN::CNAME
+     # * Gem::Resolv::DNS::Resource::IN::HINFO
++    # * Gem::Resolv::DNS::Resource::IN::HTTPS
++    # * Gem::Resolv::DNS::Resource::IN::LOC
+     # * Gem::Resolv::DNS::Resource::IN::MINFO
+     # * Gem::Resolv::DNS::Resource::IN::MX
+     # * Gem::Resolv::DNS::Resource::IN::NS
+     # * Gem::Resolv::DNS::Resource::IN::PTR
+     # * Gem::Resolv::DNS::Resource::IN::SOA
++    # * Gem::Resolv::DNS::Resource::IN::SRV
++    # * Gem::Resolv::DNS::Resource::IN::SVCB
+     # * Gem::Resolv::DNS::Resource::IN::TXT
+     # * Gem::Resolv::DNS::Resource::IN::WKS
+     #
+@@ -522,6 +530,8 @@ class Gem::Resolv
+       }
+     end
+ 
++    # :stopdoc:
++
+     def fetch_resource(name, typeclass)
+       lazy_initialize
+       truncated = {}
+@@ -659,8 +669,20 @@ class Gem::Resolv
+       }
+     end
+ 
+-    def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
+-      begin
++    case RUBY_PLATFORM
++    when *[
++      # https://www.rfc-editor.org/rfc/rfc6056.txt
++      # Appendix A. Survey of the Algorithms in Use by Some Popular Implementations
++      /freebsd/, /linux/, /netbsd/, /openbsd/, /solaris/,
++      /darwin/, # the same as FreeBSD
++    ] then
++      def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
++        udpsock.bind(bind_host, 0)
++      end
++    else
++      # Sequential port assignment
++      def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
++        # Ephemeral port number range recommended by RFC 6056
+         port = random(1024..65535)
+         udpsock.bind(bind_host, port)
+       rescue Errno::EADDRINUSE, # POSIX
+@@ -704,7 +726,8 @@ class Gem::Resolv
+           begin
+             reply, from = recv_reply(select_result[0])
+           rescue Errno::ECONNREFUSED, # GNU/Linux, FreeBSD
+-                 Errno::ECONNRESET # Windows
++                 Errno::ECONNRESET, # Windows
++                 EOFError
+             # No name server running on the server?
+             # Don't wait anymore.
+             raise ResolvTimeout
+@@ -913,8 +936,11 @@ class Gem::Resolv
+         end
+ 
+         def recv_reply(readable_socks)
+-          len = readable_socks[0].read(2).unpack('n')[0]
++          len_data = readable_socks[0].read(2)
++          raise EOFError if len_data.nil? || len_data.bytesize != 2
++          len = len_data.unpack('n')[0]
+           reply = @socks[0].read(len)
++          raise EOFError if reply.nil? || reply.bytesize != len
+           return reply, nil
+         end
+ 
+@@ -983,13 +1009,13 @@ class Gem::Resolv
+             next unless keyword
+             case keyword
+             when 'nameserver'
+-              nameserver.concat(args)
++              nameserver.concat(args.each(&:freeze))
+             when 'domain'
+               next if args.empty?
+-              search = [args[0]]
++              search = [args[0].freeze]
+             when 'search'
+               next if args.empty?
+-              search = args
++              search = args.each(&:freeze)
+             when 'options'
+               args.each {|arg|
+                 case arg
+@@ -1000,22 +1026,21 @@ class Gem::Resolv
+             end
+           }
+         }
+-        return { :nameserver => nameserver, :search => search, :ndots => ndots }
++        return { :nameserver => nameserver.freeze, :search => search.freeze, :ndots => ndots.freeze }.freeze
+       end
+ 
+       def Config.default_config_hash(filename="/etc/resolv.conf")
+         if File.exist? filename
+-          config_hash = Config.parse_resolv_conf(filename)
++          Config.parse_resolv_conf(filename)
++        elsif defined?(Win32::Resolv)
++          search, nameserver = Win32::Resolv.get_resolv_info
++          config_hash = {}
++          config_hash[:nameserver] = nameserver if nameserver
++          config_hash[:search] = [search].flatten if search
++          config_hash
+         else
+-          if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM
+-            require 'win32/resolv'
+-            search, nameserver = Win32::Resolv.get_resolv_info
+-            config_hash = {}
+-            config_hash[:nameserver] = nameserver if nameserver
+-            config_hash[:search] = [search].flatten if search
+-          end
++          {}
+         end
+-        config_hash || {}
+       end
+ 
+       def lazy_initialize
+@@ -1228,6 +1253,13 @@ class Gem::Resolv
+ 
+       class Str # :nodoc:
+         def initialize(string)
++          # A label is limited to 63 octets. [RFC 1035 2.3.4] Checking it here
++          # makes it an invariant of the object: every label, however it was
++          # built, fits in its length octet and cannot wrap it. Callers turn
++          # this into the error their own contract promises.
++          if string.bytesize > 63
++            raise ArgumentError, "DNS label is too long (#{string.bytesize} bytes, max 63): #{string.inspect}"
++          end
+           @string = string
+           # case insensivity of DNS labels doesn't apply non-ASCII characters. [RFC 4343]
+           # This assumes @string is given in ASCII compatible encoding.
+@@ -1273,7 +1305,26 @@ class Gem::Resolv
+         when Name
+           return arg
+         when String
+-          return Name.new(Label.split(arg), /\.\z/ =~ arg ? true : false)
++          # A hostname is runtime data rather than a programming mistake, so
++          # both size limits surface as ResolvError to stay rescuable alongside
++          # the rest of name resolution. The type check below is a caller
++          # mistake and keeps raising ArgumentError.
++          begin
++            labels = Label.split(arg)
++          rescue ArgumentError => e
++            raise ResolvError.new(e.message)
++          end
++          # Label::Str enforces the per-label limit. Only the total is knowable
++          # here, and it counts the encoded form, so size starts at 1 for the
++          # root label's terminating zero octet. [RFC 1035 2.3.4, 3.1]
++          size = 1
++          labels.each do |label|
++            size += 1 + label.string.bytesize
++            if size > 255
++              raise ResolvError.new("DNS name is too long (#{size} octets, max 255): #{arg.inspect}")
++            end
++          end
++          return Name.new(labels, /\.\z/ =~ arg ? true : false)
+         else
+           raise ArgumentError.new("cannot interpret as DNS name: #{arg.inspect}")
+         end
+@@ -1395,12 +1446,24 @@ class Gem::Resolv
+                @rd == other.rd &&
+                @ra == other.ra &&
+                @rcode == other.rcode &&
+-               @question == other.question &&
++               question_equal?(other.question) &&
+                @answer == other.answer &&
+                @authority == other.authority &&
+                @additional == other.additional
+       end
+ 
++      # A question holds the resource class itself, and decoding creates a fresh
++      # class for each unknown type, so the classes cannot be compared by
++      # identity alone.
++      private def question_equal?(other_question) # :nodoc:
++        return false unless @question.length == other_question.length
++        @question.zip(other_question) {|(name, typeclass), (o_name, o_typeclass)|
++          return false unless name == o_name &&
++                              Resource::Generic.type_class_equal?(typeclass, o_typeclass)
++        }
++        return true
++      end
++
+       def add_question(name, typeclass)
+         @question << [Name.create(name), typeclass]
+       end
+@@ -1507,8 +1570,15 @@ class Gem::Resolv
+         end
+ 
+         def put_string(d)
+-          self.put_pack("C", d.length)
+-          @data << d
++          s = d.to_s
++          # A character-string is prefixed by a single length octet, so it can
++          # hold at most 255 octets. [RFC 1035 3.3] Reject anything longer to
++          # avoid silently truncating the length to its low 8 bits (mod 256).
++          if s.bytesize > 255
++            raise ArgumentError, "character-string is too long (#{s.bytesize} bytes, max 255): #{s.inspect}"
++          end
++          self.put_pack("C", s.bytesize)
++          @data << s
+         end
+ 
+         def put_string_list(ds)
+@@ -1538,7 +1608,17 @@ class Gem::Resolv
+         end
+ 
+         def put_label(d)
+-          self.put_string(d.to_s)
++          s = d.to_s
++          # Label::Str applies this limit when a label is built, so what is left
++          # for here is a raw string handed straight to put_labels. The two ways
++          # an over-long label goes wrong differ: 64 to 255 octets write a length
++          # octet in the reserved or compression pointer range, and 256 or more
++          # wrap it mod 256. Either way the encoded name stops being the name the
++          # caller asked for. [RFC 1035 2.3.4, 4.1.4]
++          if s.bytesize > 63
++            raise ArgumentError, "DNS label is too long (#{s.bytesize} bytes, max 63): #{s.inspect}"
++          end
++          self.put_string(s)
+         end
+       end
+ 
+@@ -1664,6 +1744,9 @@ class Gem::Resolv
+           prev_index = @index
+           save_index = nil
+           d = []
++          # size counts the encoded form, so it starts at 1 for the root
++          # label's terminating zero octet. [RFC 1035 3.1]
++          size = 1
+           while true
+             raise DecodeError.new("limit exceeded") if @limit <= @index
+             case @data.getbyte(@index)
+@@ -1684,13 +1767,21 @@ class Gem::Resolv
+               end
+               @index = idx
+             else
+-              d << self.get_label
++              l = self.get_label
++              d << l
++              size += 1 + l.string.bytesize
++              raise DecodeError.new("name label data exceed 255 octets") if size > 255
+             end
+           end
+         end
+ 
+         def get_label
+           return Label::Str.new(self.get_string)
++        rescue ArgumentError => e
++          # A length octet of 64..191 is reserved rather than a label length,
++          # but this decoder used to read it as one. [RFC 1035 4.1.4] Report it
++          # the way the rest of a malformed message is reported.
++          raise DecodeError.new(e.message)
+         end
+ 
+         def get_question
+@@ -1878,8 +1969,9 @@ class Gem::Resolv
+           key_name = :"key#{key_number}"
+           c.const_set(:KeyName, key_name)
+           c.const_set(:KeyNumber, key_number)
+-          self.const_set(:"Key#{key_number}", c)
+-          ClassHash[key_name] = ClassHash[key_number] = c
++          # Not registered in a constant or in ClassHash. ClassHash creates a
++          # class for every unknown SvcParamKey, so registering them
++          # permanently would let a malicious response exhaust memory.
+           return c
+         end
+       end
+@@ -2110,7 +2202,14 @@ class Gem::Resolv
+ 
+       attr_reader :ttl
+ 
+-      ClassHash = {} # :nodoc:
++      ClassHash = Module.new do
++        module_function
++
++        def []=(type_class_value, klass)
++          type_value, class_value = type_class_value
++          Resource.const_set(:"Type#{type_value}_Class#{class_value}", klass)
++        end
++      end
+ 
+       def encode_rdata(msg) # :nodoc:
+         raise NotImplementedError.new
+@@ -2148,7 +2247,9 @@ class Gem::Resolv
+       end
+ 
+       def self.get_class(type_value, class_value) # :nodoc:
+-        return ClassHash[[type_value, class_value]] ||
++        cache = :"Type#{type_value}_Class#{class_value}"
++
++        return (const_defined?(cache) && const_get(cache)) ||
+                Generic.create(type_value, class_value)
+       end
+ 
+@@ -2177,12 +2278,28 @@ class Gem::Resolv
+           return self.new(msg.get_bytes)
+         end
+ 
++        # create makes a fresh class for each decoded resource, so the type and
++        # class values have to be compared instead of the class itself.
++        def self.type_class_equal?(klass, other) # :nodoc:
++          return true if klass.equal?(other)
++          Generic > klass && Generic > other &&
++            klass::TypeValue == other::TypeValue &&
++            klass::ClassValue == other::ClassValue
++        end
++
++        def ==(other) # :nodoc:
++          return other.is_a?(Generic) &&
++                 Generic.type_class_equal?(self.class, other.class) &&
++                 @data == other.data
++        end
++
+         def self.create(type_value, class_value) # :nodoc:
+           c = Class.new(Generic)
+           c.const_set(:TypeValue, type_value)
+           c.const_set(:ClassValue, class_value)
+-          Generic.const_set("Type#{type_value}_Class#{class_value}", c)
+-          ClassHash[[type_value, class_value]] = c
++          # Not registered in a constant or in ClassHash. get_class creates a
++          # class for every unknown (type, class) pair, so registering them
++          # permanently would let a malicious response exhaust memory.
+           return c
+         end
+       end
+@@ -2577,7 +2694,7 @@ class Gem::Resolv
+         end
+ 
+         ##
+-        # Flags for this proprty:
++        # Flags for this property:
+         # - Bit 0 : 0 = not critical, 1 = critical
+ 
+         attr_reader :flags
+@@ -2898,15 +3015,21 @@ class Gem::Resolv
+ 
+   class IPv4
+ 
+-    ##
+-    # Regular expression IPv4 addresses must match.
+-
+     Regex256 = /0
+                |1(?:[0-9][0-9]?)?
+                |2(?:[0-4][0-9]?|5[0-5]?|[6-9])?
+-               |[3-9][0-9]?/x
++               |[3-9][0-9]?/x # :nodoc:
++
++    ##
++    # Regular expression IPv4 addresses must match.
+     Regex = /\A(#{Regex256})\.(#{Regex256})\.(#{Regex256})\.(#{Regex256})\z/
+ 
++    ##
++    # Creates a new IPv4 address from +arg+ which may be:
++    #
++    # IPv4:: returns +arg+.
++    # String:: +arg+ must match the IPv4::Regex constant
++
+     def self.create(arg)
+       case arg
+       when IPv4
+@@ -3215,13 +3338,15 @@ class Gem::Resolv
+ 
+   end
+ 
+-  module LOC
++  module LOC # :nodoc:
+ 
+     ##
+     # A Gem::Resolv::LOC::Size
+ 
+     class Size
+ 
++      # Regular expression LOC size must match.
++
+       Regex = /^(\d+\.*\d*)[m]$/
+ 
+       ##
+@@ -3247,6 +3372,7 @@ class Gem::Resolv
+         end
+       end
+ 
++      # Internal use; use self.create.
+       def initialize(scalar)
+         @scalar = scalar
+       end
+@@ -3284,6 +3410,8 @@ class Gem::Resolv
+ 
+     class Coord
+ 
++      # Regular expression LOC Coord must match.
++
+       Regex = /^(\d+)\s(\d+)\s(\d+\.\d+)\s([NESW])$/
+ 
+       ##
+@@ -3313,6 +3441,7 @@ class Gem::Resolv
+         end
+       end
+ 
++      # Internal use; use self.create.
+       def initialize(coordinates,orientation)
+         unless coordinates.kind_of?(String)
+           raise ArgumentError.new("Coord must be a 32bit unsigned integer in hex format: #{coordinates.inspect}")
+@@ -3375,6 +3504,8 @@ class Gem::Resolv
+ 
+     class Alt
+ 
++      # Regular expression LOC Alt must match.
++
+       Regex = /^([+-]*\d+\.*\d*)[m]$/
+ 
+       ##
+@@ -3400,6 +3531,7 @@ class Gem::Resolv
+         end
+       end
+ 
++      # Internal use; use self.create.
+       def initialize(altitude)
+         @altitude = altitude
+       end
+diff -Nuarp ruby-3.4.13.a/loadpath.c ruby-3.4.13.b/loadpath.c
+--- ruby-3.4.13.a/loadpath.c	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/loadpath.c	2026-11-20 02:04:41.928885946 -0500
+@@ -65,22 +65,38 @@ const char ruby_initial_load_paths[] =
+     RUBY_SEARCH_PATH "\0"
+ #endif
+ #ifndef NO_RUBY_SITE_LIB
++#ifdef RUBY_LIB_VERSION_BLANK
++    RUBY_SITE_LIB "\0"
++#else
+     RUBY_SITE_LIB2 "\0"
++#endif
+ #ifdef RUBY_THINARCH
+     RUBY_SITE_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+ #endif
+     RUBY_SITE_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
++#ifndef RUBY_LIB_VERSION_BLANK
+     RUBY_SITE_LIB "\0"
+ #endif
++#endif
+ 
+ #ifndef NO_RUBY_VENDOR_LIB
++#ifdef RUBY_LIB_VERSION_BLANK
++    RUBY_VENDOR_LIB "\0"
++#else
+     RUBY_VENDOR_LIB2 "\0"
++#endif
+ #ifdef RUBY_THINARCH
+     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_THINARCH) "\0"
+ #endif
+     RUBY_VENDOR_ARCH_LIB_FOR(RUBY_SITEARCH) "\0"
++#ifndef RUBY_LIB_VERSION_BLANK
+     RUBY_VENDOR_LIB "\0"
+ #endif
++#endif
++
++#ifdef RUBYGEMS_DIR
++    RUBYGEMS_DIR "\0"
++#endif
+ 
+     RUBY_LIB "\0"
+ #ifdef RUBY_THINARCH
+diff -Nuarp ruby-3.4.13.a/ruby.c ruby-3.4.13.b/ruby.c
+--- ruby-3.4.13.a/ruby.c	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/ruby.c	2026-11-20 02:04:45.969401164 -0500
+@@ -1744,10 +1744,14 @@ proc_options(long argc, char **argv, rub
+ 
+ void Init_builtin_features(void);
+ 
++/* abrt.c */
++void Init_abrt(void);
++
+ static void
+ ruby_init_prelude(void)
+ {
+     Init_builtin_features();
++    Init_abrt();
+     rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
+ }
+ 
+diff -Nuarp ruby-3.4.13.a/spec/ruby/core/kernel/require_spec.rb ruby-3.4.13.b/spec/ruby/core/kernel/require_spec.rb
+--- ruby-3.4.13.a/spec/ruby/core/kernel/require_spec.rb	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/spec/ruby/core/kernel/require_spec.rb	2026-11-20 02:04:45.969532493 -0500
+@@ -25,6 +25,8 @@ describe "Kernel#require" do
+     out = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems --disable-did-you-mean')
+     features = out.lines.map { |line| File.basename(line.chomp, '.*') }
+ 
++    # Ignore ABRT
++    features -= %w[abrt]
+     # Ignore CRuby internals
+     features -= %w[encdb transdb windows_1252 windows_31j]
+     features.reject! { |feature| feature.end_with?('-fake') }
+diff -Nuarp ruby-3.4.13.a/template/ruby.pc.in ruby-3.4.13.b/template/ruby.pc.in
+--- ruby-3.4.13.a/template/ruby.pc.in	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/template/ruby.pc.in	2026-11-20 02:04:27.689148427 -0500
+@@ -2,6 +2,7 @@ MAJOR=@MAJOR@
+ MINOR=@MINOR@
+ TEENY=@TEENY@
+ ruby_version=@ruby_version@
++ruby_version_dir_name=@ruby_version_dir_name@
+ RUBY_API_VERSION=@RUBY_API_VERSION@
+ RUBY_PROGRAM_VERSION=@RUBY_PROGRAM_VERSION@
+ arch=@arch@
+diff -Nuarp ruby-3.4.13.a/template/verconf.h.tmpl ruby-3.4.13.b/template/verconf.h.tmpl
+--- ruby-3.4.13.a/template/verconf.h.tmpl	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/template/verconf.h.tmpl	2026-11-20 02:04:41.929033045 -0500
+@@ -36,6 +36,9 @@
+ % if C["RUBY_SEARCH_PATH"]
+ #define RUBY_SEARCH_PATH		"${RUBY_SEARCH_PATH}"
+ % end
++% if C["rubygemsdir"]
++#define RUBYGEMS_DIR			"${rubygemsdir}"
++% end
+ %
+ % R = {}
+ % R["ruby_version"] = '"RUBY_LIB_VERSION"'
+diff -Nuarp ruby-3.4.13.a/test/openssl/test_pkey_rsa.rb ruby-3.4.13.b/test/openssl/test_pkey_rsa.rb
+--- ruby-3.4.13.a/test/openssl/test_pkey_rsa.rb	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/test/openssl/test_pkey_rsa.rb	2026-11-20 02:04:53.823901712 -0500
+@@ -108,13 +108,13 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PK
+     pssopts = {
+       "rsa_padding_mode" => "pss",
+       "rsa_pss_saltlen" => 20,
+-      "rsa_mgf1_md" => "SHA1"
++      "rsa_mgf1_md" => "SHA256"
+     }
+     sig_pss = key.sign("SHA256", data, pssopts)
+     assert_equal 256, sig_pss.bytesize
+     assert_equal true, key.verify("SHA256", sig_pss, data, pssopts)
+     assert_equal true, key.verify_pss("SHA256", sig_pss, data,
+-                                      salt_length: 20, mgf1_hash: "SHA1")
++                                      salt_length: 20, mgf1_hash: "SHA256")
+     # Defaults to PKCS #1 v1.5 padding => verification failure
+     assert_equal false, key.verify("SHA256", sig_pss, data)
+ 
+@@ -188,22 +188,22 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PK
+     data = "Sign me!"
+     invalid_data = "Sign me?"
+ 
+-    signature = key.sign_pss("SHA256", data, salt_length: 20, mgf1_hash: "SHA1")
++    signature = key.sign_pss("SHA256", data, salt_length: 20, mgf1_hash: "SHA256")
+     assert_equal 256, signature.bytesize
+     assert_equal true,
+-      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA1")
++      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA256")
+     assert_equal true,
+-      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
++      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA256")
+     assert_equal false,
+-      key.verify_pss("SHA256", signature, invalid_data, salt_length: 20, mgf1_hash: "SHA1")
++      key.verify_pss("SHA256", signature, invalid_data, salt_length: 20, mgf1_hash: "SHA256")
+ 
+-    signature = key.sign_pss("SHA256", data, salt_length: :digest, mgf1_hash: "SHA1")
++    signature = key.sign_pss("SHA256", data, salt_length: :digest, mgf1_hash: "SHA256")
+     assert_equal true,
+-      key.verify_pss("SHA256", signature, data, salt_length: 32, mgf1_hash: "SHA1")
++      key.verify_pss("SHA256", signature, data, salt_length: 32, mgf1_hash: "SHA256")
+     assert_equal true,
+-      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
++      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA256")
+     assert_equal false,
+-      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA1")
++      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA256")
+ 
+     # The sign_pss with `salt_length: :max` raises the "invalid salt length"
+     # error in FIPS. We need to skip the tests in FIPS.
+@@ -213,18 +213,18 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PK
+     # FIPS 186-5 section 5.4 PKCS #1
+     # https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf
+     unless OpenSSL.fips_mode
+-      signature = key.sign_pss("SHA256", data, salt_length: :max, mgf1_hash: "SHA1")
++      signature = key.sign_pss("SHA256", data, salt_length: :max, mgf1_hash: "SHA256")
+       # Should verify on the following salt_length (sLen).
+       # sLen <= emLen (octat) - 2 - hLen (octet) = 2048 / 8 - 2 - 256 / 8 = 222
+       # https://datatracker.ietf.org/doc/html/rfc8017#section-9.1.1
+       assert_equal true,
+-        key.verify_pss("SHA256", signature, data, salt_length: 222, mgf1_hash: "SHA1")
++        key.verify_pss("SHA256", signature, data, salt_length: 222, mgf1_hash: "SHA256")
+       assert_equal true,
+-        key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
++        key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA256")
+     end
+ 
+     assert_raise(OpenSSL::PKey::RSAError) {
+-      key.sign_pss("SHA256", data, salt_length: 223, mgf1_hash: "SHA1")
++      key.sign_pss("SHA256", data, salt_length: 223, mgf1_hash: "SHA256")
+     }
+   end
+ 
+diff -Nuarp ruby-3.4.13.a/test/rubygems/test_gem.rb ruby-3.4.13.b/test/rubygems/test_gem.rb
+--- ruby-3.4.13.a/test/rubygems/test_gem.rb	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/test/rubygems/test_gem.rb	2026-11-20 02:04:27.689759152 -0500
+@@ -1365,7 +1365,8 @@ class TestGem < Gem::TestCase
+ 
+   def test_self_user_dir
+     parts = [@userhome, ".gem", Gem.ruby_engine]
+-    parts << RbConfig::CONFIG["ruby_version"] unless RbConfig::CONFIG["ruby_version"].empty?
++    ruby_version_dir_name = RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"]
++    parts << ruby_version_dir_name unless ruby_version_dir_name.empty?
+ 
+     FileUtils.mkdir_p File.join(parts)
+ 
+@@ -1441,7 +1442,7 @@ class TestGem < Gem::TestCase
+     vendordir(File.join(@tempdir, "vendor")) do
+       expected =
+         File.join RbConfig::CONFIG["vendordir"], "gems",
+-                  RbConfig::CONFIG["ruby_version"]
++                  RbConfig::CONFIG["ruby_version_dir_name"] || RbConfig::CONFIG["ruby_version"]
+ 
+       assert_equal expected, Gem.vendor_dir
+     end
+diff -Nuarp ruby-3.4.13.a/tool/mkconfig.rb ruby-3.4.13.b/tool/mkconfig.rb
+--- ruby-3.4.13.a/tool/mkconfig.rb	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/tool/mkconfig.rb	2026-11-20 02:04:31.128660304 -0500
+@@ -116,7 +116,7 @@ File.foreach "config.status" do |line|
+     val = val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump
+     case name
+     when /^prefix$/
+-      val = "(TOPDIR || DESTDIR + #{val})"
++      val = "(((TOPDIR && TOPDIR.empty?) ? nil : TOPDIR) || DESTDIR + #{val})"
+     when /^ARCH_FLAG$/
+       val = "arch_flag || #{val}" if universal
+     when /^UNIVERSAL_ARCHNAMES$/
+diff -Nuarp ruby-3.4.13.a/tool/rbinstall.rb ruby-3.4.13.b/tool/rbinstall.rb
+--- ruby-3.4.13.a/tool/rbinstall.rb	2026-11-18 17:09:58.000000000 -0500
++++ ruby-3.4.13.b/tool/rbinstall.rb	2026-11-20 02:04:41.929155644 -0500
+@@ -382,6 +382,7 @@ if CONFIG["vendordir"]
+   vendorlibdir = CONFIG["vendorlibdir"]
+   vendorarchlibdir = CONFIG["vendorarchdir"]
+ end
++rubygemsdir = CONFIG["rubygemsdir"]
+ mandir = CONFIG["mandir", true]
+ docdir = CONFIG["docdir", true]
+ enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
+@@ -945,7 +946,7 @@ end
+ 
+ install?(:doc, :rdoc) do
+   if $rdocdir
+-    ridatadir = File.join(CONFIG['ridir'], CONFIG['ruby_version'], "system")
++    ridatadir = File.join(CONFIG['ridir'], CONFIG['ruby_version_dir_name'] || CONFIG['ruby_version'], "system")
+     prepare "rdoc", ridatadir
+     install_recursive($rdocdir, ridatadir, :no_install => rdoc_noinst, :mode => $data_mode)
+   end
+@@ -974,7 +975,16 @@ end
+ install?(:local, :comm, :lib) do
+   prepare "library scripts", rubylibdir
+   noinst = %w[*.txt *.rdoc *.gemspec]
++  # Bundler carries "rubygems.rb" file, so it must be specialcased :/
++  noinst += %w[rubygems.rb rubygems/ bundler.rb bundler/] if rubygemsdir
+   install_recursive(File.join(srcdir, "lib"), rubylibdir, :no_install => noinst, :mode => $data_mode)
++  if rubygemsdir
++    noinst = %w[*.txt *.rdoc *.gemspec]
++    install_recursive(File.join(srcdir, "lib", "rubygems"), File.join(rubygemsdir, "rubygems"), :no_install => noinst, :mode => $data_mode)
++    install(File.join(srcdir, "lib", "rubygems.rb"), File.join(rubygemsdir, "rubygems.rb"), :mode => $data_mode)
++    install_recursive(File.join(srcdir, "lib", "bundler"), File.join(rubylibdir, "bundler"), :no_install => noinst, :mode => $data_mode)
++    install(File.join(srcdir, "lib", "bundler.rb"), rubylibdir, :mode => $data_mode)
++  end
+ end
+ 
+ install?(:local, :comm, :hdr, :'comm-hdr') do

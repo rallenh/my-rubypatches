@@ -1,0 +1,484 @@
+From 68a11b6f4400ae2f0f16df3773921253e419f294 Mon Sep 17 00:00:00 2001
+From: Hiroshi SHIBATA <hsbt@ruby-lang.org>
+Date: Thu, 27 Aug 2026 12:31:49 +0900
+Subject: [PATCH] Bump up resolv-0.7.2 for Ruby 3.4
+
+Backport of the August 2026 resolv security release.
+
+CVE-2026-80212
+CVE-2026-80213
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+---
+ lib/resolv.rb                     | 101 +++++++++++++--
+ test/resolv/test_dns.rb           | 199 ++++++++++++++++++++++++++++++
+ test/resolv/test_resource.rb      |  61 +++++++++
+ test/resolv/test_resource_leak.rb | 101 +++++++++++++++
+ 4 files changed, 451 insertions(+), 11 deletions(-)
+ create mode 100644 test/resolv/test_resource_leak.rb
+
+--- ruby-3.4.10.orig/lib/rubygems/vendor/resolv/lib/resolv.rb	2026-06-30 19:54:35.000000000 +0900
++++ ruby-3.4.10/lib/rubygems/vendor/resolv/lib/resolv.rb	2026-09-10 17:09:17.710957720 +0900
+@@ -4,6 +4,7 @@ require 'socket'
+ require_relative '../../timeout/lib/timeout'
+ require 'io/wait'
+ require_relative '../../../vendored_securerandom'
++require 'rbconfig'
+ 
+ # Gem::Resolv is a thread-aware DNS resolver library written in Ruby.  Gem::Resolv can
+ # handle multiple DNS requests concurrently without blocking the entire Ruby
+@@ -33,7 +34,8 @@ require_relative '../../../vendored_secu
+ 
+ class Gem::Resolv
+ 
+-  VERSION = "0.6.0"
++  # The version string
++  VERSION = "0.7.2"
+ 
+   ##
+   # Looks up the first IP address for +name+.
+@@ -177,14 +179,15 @@ class Gem::Resolv
+   # Gem::Resolv::Hosts is a hostname resolver that uses the system hosts file.
+ 
+   class Hosts
+-    if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM and
++    if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
+       begin
+-        require 'win32/resolv'
+-        DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
++        require 'win32/resolv' unless defined?(Win32::Resolv)
++        hosts = Win32::Resolv.get_hosts_path || IO::NULL
+       rescue LoadError
+       end
+     end
+-    DefaultFileName ||= '/etc/hosts'
++    # The default file name for host names
++    DefaultFileName = hosts || '/etc/hosts'
+ 
+     ##
+     # Creates a new Gem::Resolv::Hosts, using +filename+ for its data source.
+@@ -484,13 +487,18 @@ class Gem::Resolv
+     # * Gem::Resolv::DNS::Resource::IN::A
+     # * Gem::Resolv::DNS::Resource::IN::AAAA
+     # * Gem::Resolv::DNS::Resource::IN::ANY
++    # * Gem::Resolv::DNS::Resource::IN::CAA
+     # * Gem::Resolv::DNS::Resource::IN::CNAME
+     # * Gem::Resolv::DNS::Resource::IN::HINFO
++    # * Gem::Resolv::DNS::Resource::IN::HTTPS
++    # * Gem::Resolv::DNS::Resource::IN::LOC
+     # * Gem::Resolv::DNS::Resource::IN::MINFO
+     # * Gem::Resolv::DNS::Resource::IN::MX
+     # * Gem::Resolv::DNS::Resource::IN::NS
+     # * Gem::Resolv::DNS::Resource::IN::PTR
+     # * Gem::Resolv::DNS::Resource::IN::SOA
++    # * Gem::Resolv::DNS::Resource::IN::SRV
++    # * Gem::Resolv::DNS::Resource::IN::SVCB
+     # * Gem::Resolv::DNS::Resource::IN::TXT
+     # * Gem::Resolv::DNS::Resource::IN::WKS
+     #
+@@ -522,6 +530,8 @@ class Gem::Resolv
+       }
+     end
+ 
++    # :stopdoc:
++
+     def fetch_resource(name, typeclass)
+       lazy_initialize
+       truncated = {}
+@@ -659,8 +669,20 @@ class Gem::Resolv
+       }
+     end
+ 
+-    def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
+-      begin
++    case RUBY_PLATFORM
++    when *[
++      # https://www.rfc-editor.org/rfc/rfc6056.txt
++      # Appendix A. Survey of the Algorithms in Use by Some Popular Implementations
++      /freebsd/, /linux/, /netbsd/, /openbsd/, /solaris/,
++      /darwin/, # the same as FreeBSD
++    ] then
++      def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
++        udpsock.bind(bind_host, 0)
++      end
++    else
++      # Sequential port assignment
++      def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
++        # Ephemeral port number range recommended by RFC 6056
+         port = random(1024..65535)
+         udpsock.bind(bind_host, port)
+       rescue Errno::EADDRINUSE, # POSIX
+@@ -704,7 +726,8 @@ class Gem::Resolv
+           begin
+             reply, from = recv_reply(select_result[0])
+           rescue Errno::ECONNREFUSED, # GNU/Linux, FreeBSD
+-                 Errno::ECONNRESET # Windows
++                 Errno::ECONNRESET, # Windows
++                 EOFError
+             # No name server running on the server?
+             # Don't wait anymore.
+             raise ResolvTimeout
+@@ -913,8 +936,11 @@ class Gem::Resolv
+         end
+ 
+         def recv_reply(readable_socks)
+-          len = readable_socks[0].read(2).unpack('n')[0]
++          len_data = readable_socks[0].read(2)
++          raise EOFError if len_data.nil? || len_data.bytesize != 2
++          len = len_data.unpack('n')[0]
+           reply = @socks[0].read(len)
++          raise EOFError if reply.nil? || reply.bytesize != len
+           return reply, nil
+         end
+ 
+@@ -983,13 +1009,13 @@ class Gem::Resolv
+             next unless keyword
+             case keyword
+             when 'nameserver'
+-              nameserver.concat(args)
++              nameserver.concat(args.each(&:freeze))
+             when 'domain'
+               next if args.empty?
+-              search = [args[0]]
++              search = [args[0].freeze]
+             when 'search'
+               next if args.empty?
+-              search = args
++              search = args.each(&:freeze)
+             when 'options'
+               args.each {|arg|
+                 case arg
+@@ -1000,22 +1026,21 @@ class Gem::Resolv
+             end
+           }
+         }
+-        return { :nameserver => nameserver, :search => search, :ndots => ndots }
++        return { :nameserver => nameserver.freeze, :search => search.freeze, :ndots => ndots.freeze }.freeze
+       end
+ 
+       def Config.default_config_hash(filename="/etc/resolv.conf")
+         if File.exist? filename
+-          config_hash = Config.parse_resolv_conf(filename)
++          Config.parse_resolv_conf(filename)
++        elsif defined?(Win32::Resolv)
++          search, nameserver = Win32::Resolv.get_resolv_info
++          config_hash = {}
++          config_hash[:nameserver] = nameserver if nameserver
++          config_hash[:search] = [search].flatten if search
++          config_hash
+         else
+-          if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM
+-            require 'win32/resolv'
+-            search, nameserver = Win32::Resolv.get_resolv_info
+-            config_hash = {}
+-            config_hash[:nameserver] = nameserver if nameserver
+-            config_hash[:search] = [search].flatten if search
+-          end
++          {}
+         end
+-        config_hash || {}
+       end
+ 
+       def lazy_initialize
+@@ -1228,6 +1253,13 @@ class Gem::Resolv
+ 
+       class Str # :nodoc:
+         def initialize(string)
++          # A label is limited to 63 octets. [RFC 1035 2.3.4] Checking it here
++          # makes it an invariant of the object: every label, however it was
++          # built, fits in its length octet and cannot wrap it. Callers turn
++          # this into the error their own contract promises.
++          if string.bytesize > 63
++            raise ArgumentError, "DNS label is too long (#{string.bytesize} bytes, max 63): #{string.inspect}"
++          end
+           @string = string
+           # case insensivity of DNS labels doesn't apply non-ASCII characters. [RFC 4343]
+           # This assumes @string is given in ASCII compatible encoding.
+@@ -1273,7 +1305,26 @@ class Gem::Resolv
+         when Name
+           return arg
+         when String
+-          return Name.new(Label.split(arg), /\.\z/ =~ arg ? true : false)
++          # A hostname is runtime data rather than a programming mistake, so
++          # both size limits surface as ResolvError to stay rescuable alongside
++          # the rest of name resolution. The type check below is a caller
++          # mistake and keeps raising ArgumentError.
++          begin
++            labels = Label.split(arg)
++          rescue ArgumentError => e
++            raise ResolvError.new(e.message)
++          end
++          # Label::Str enforces the per-label limit. Only the total is knowable
++          # here, and it counts the encoded form, so size starts at 1 for the
++          # root label's terminating zero octet. [RFC 1035 2.3.4, 3.1]
++          size = 1
++          labels.each do |label|
++            size += 1 + label.string.bytesize
++            if size > 255
++              raise ResolvError.new("DNS name is too long (#{size} octets, max 255): #{arg.inspect}")
++            end
++          end
++          return Name.new(labels, /\.\z/ =~ arg ? true : false)
+         else
+           raise ArgumentError.new("cannot interpret as DNS name: #{arg.inspect}")
+         end
+@@ -1395,12 +1446,24 @@ class Gem::Resolv
+                @rd == other.rd &&
+                @ra == other.ra &&
+                @rcode == other.rcode &&
+-               @question == other.question &&
++               question_equal?(other.question) &&
+                @answer == other.answer &&
+                @authority == other.authority &&
+                @additional == other.additional
+       end
+ 
++      # A question holds the resource class itself, and decoding creates a fresh
++      # class for each unknown type, so the classes cannot be compared by
++      # identity alone.
++      private def question_equal?(other_question) # :nodoc:
++        return false unless @question.length == other_question.length
++        @question.zip(other_question) {|(name, typeclass), (o_name, o_typeclass)|
++          return false unless name == o_name &&
++                              Resource::Generic.type_class_equal?(typeclass, o_typeclass)
++        }
++        return true
++      end
++
+       def add_question(name, typeclass)
+         @question << [Name.create(name), typeclass]
+       end
+@@ -1507,8 +1570,15 @@ class Gem::Resolv
+         end
+ 
+         def put_string(d)
+-          self.put_pack("C", d.length)
+-          @data << d
++          s = d.to_s
++          # A character-string is prefixed by a single length octet, so it can
++          # hold at most 255 octets. [RFC 1035 3.3] Reject anything longer to
++          # avoid silently truncating the length to its low 8 bits (mod 256).
++          if s.bytesize > 255
++            raise ArgumentError, "character-string is too long (#{s.bytesize} bytes, max 255): #{s.inspect}"
++          end
++          self.put_pack("C", s.bytesize)
++          @data << s
+         end
+ 
+         def put_string_list(ds)
+@@ -1538,7 +1608,17 @@ class Gem::Resolv
+         end
+ 
+         def put_label(d)
+-          self.put_string(d.to_s)
++          s = d.to_s
++          # Label::Str applies this limit when a label is built, so what is left
++          # for here is a raw string handed straight to put_labels. The two ways
++          # an over-long label goes wrong differ: 64 to 255 octets write a length
++          # octet in the reserved or compression pointer range, and 256 or more
++          # wrap it mod 256. Either way the encoded name stops being the name the
++          # caller asked for. [RFC 1035 2.3.4, 4.1.4]
++          if s.bytesize > 63
++            raise ArgumentError, "DNS label is too long (#{s.bytesize} bytes, max 63): #{s.inspect}"
++          end
++          self.put_string(s)
+         end
+       end
+ 
+@@ -1664,6 +1744,9 @@ class Gem::Resolv
+           prev_index = @index
+           save_index = nil
+           d = []
++          # size counts the encoded form, so it starts at 1 for the root
++          # label's terminating zero octet. [RFC 1035 3.1]
++          size = 1
+           while true
+             raise DecodeError.new("limit exceeded") if @limit <= @index
+             case @data.getbyte(@index)
+@@ -1684,13 +1767,21 @@ class Gem::Resolv
+               end
+               @index = idx
+             else
+-              d << self.get_label
++              l = self.get_label
++              d << l
++              size += 1 + l.string.bytesize
++              raise DecodeError.new("name label data exceed 255 octets") if size > 255
+             end
+           end
+         end
+ 
+         def get_label
+           return Label::Str.new(self.get_string)
++        rescue ArgumentError => e
++          # A length octet of 64..191 is reserved rather than a label length,
++          # but this decoder used to read it as one. [RFC 1035 4.1.4] Report it
++          # the way the rest of a malformed message is reported.
++          raise DecodeError.new(e.message)
+         end
+ 
+         def get_question
+@@ -1878,8 +1969,9 @@ class Gem::Resolv
+           key_name = :"key#{key_number}"
+           c.const_set(:KeyName, key_name)
+           c.const_set(:KeyNumber, key_number)
+-          self.const_set(:"Key#{key_number}", c)
+-          ClassHash[key_name] = ClassHash[key_number] = c
++          # Not registered in a constant or in ClassHash. ClassHash creates a
++          # class for every unknown SvcParamKey, so registering them
++          # permanently would let a malicious response exhaust memory.
+           return c
+         end
+       end
+@@ -2110,7 +2202,14 @@ class Gem::Resolv
+ 
+       attr_reader :ttl
+ 
+-      ClassHash = {} # :nodoc:
++      ClassHash = Module.new do
++        module_function
++
++        def []=(type_class_value, klass)
++          type_value, class_value = type_class_value
++          Resource.const_set(:"Type#{type_value}_Class#{class_value}", klass)
++        end
++      end
+ 
+       def encode_rdata(msg) # :nodoc:
+         raise NotImplementedError.new
+@@ -2148,7 +2247,9 @@ class Gem::Resolv
+       end
+ 
+       def self.get_class(type_value, class_value) # :nodoc:
+-        return ClassHash[[type_value, class_value]] ||
++        cache = :"Type#{type_value}_Class#{class_value}"
++
++        return (const_defined?(cache) && const_get(cache)) ||
+                Generic.create(type_value, class_value)
+       end
+ 
+@@ -2177,12 +2278,28 @@ class Gem::Resolv
+           return self.new(msg.get_bytes)
+         end
+ 
++        # create makes a fresh class for each decoded resource, so the type and
++        # class values have to be compared instead of the class itself.
++        def self.type_class_equal?(klass, other) # :nodoc:
++          return true if klass.equal?(other)
++          Generic > klass && Generic > other &&
++            klass::TypeValue == other::TypeValue &&
++            klass::ClassValue == other::ClassValue
++        end
++
++        def ==(other) # :nodoc:
++          return other.is_a?(Generic) &&
++                 Generic.type_class_equal?(self.class, other.class) &&
++                 @data == other.data
++        end
++
+         def self.create(type_value, class_value) # :nodoc:
+           c = Class.new(Generic)
+           c.const_set(:TypeValue, type_value)
+           c.const_set(:ClassValue, class_value)
+-          Generic.const_set("Type#{type_value}_Class#{class_value}", c)
+-          ClassHash[[type_value, class_value]] = c
++          # Not registered in a constant or in ClassHash. get_class creates a
++          # class for every unknown (type, class) pair, so registering them
++          # permanently would let a malicious response exhaust memory.
+           return c
+         end
+       end
+@@ -2577,7 +2694,7 @@ class Gem::Resolv
+         end
+ 
+         ##
+-        # Flags for this proprty:
++        # Flags for this property:
+         # - Bit 0 : 0 = not critical, 1 = critical
+ 
+         attr_reader :flags
+@@ -2898,15 +3015,21 @@ class Gem::Resolv
+ 
+   class IPv4
+ 
+-    ##
+-    # Regular expression IPv4 addresses must match.
+-
+     Regex256 = /0
+                |1(?:[0-9][0-9]?)?
+                |2(?:[0-4][0-9]?|5[0-5]?|[6-9])?
+-               |[3-9][0-9]?/x
++               |[3-9][0-9]?/x # :nodoc:
++
++    ##
++    # Regular expression IPv4 addresses must match.
+     Regex = /\A(#{Regex256})\.(#{Regex256})\.(#{Regex256})\.(#{Regex256})\z/
+ 
++    ##
++    # Creates a new IPv4 address from +arg+ which may be:
++    #
++    # IPv4:: returns +arg+.
++    # String:: +arg+ must match the IPv4::Regex constant
++
+     def self.create(arg)
+       case arg
+       when IPv4
+@@ -3215,13 +3338,15 @@ class Gem::Resolv
+ 
+   end
+ 
+-  module LOC
++  module LOC # :nodoc:
+ 
+     ##
+     # A Gem::Resolv::LOC::Size
+ 
+     class Size
+ 
++      # Regular expression LOC size must match.
++
+       Regex = /^(\d+\.*\d*)[m]$/
+ 
+       ##
+@@ -3247,6 +3372,7 @@ class Gem::Resolv
+         end
+       end
+ 
++      # Internal use; use self.create.
+       def initialize(scalar)
+         @scalar = scalar
+       end
+@@ -3284,6 +3410,8 @@ class Gem::Resolv
+ 
+     class Coord
+ 
++      # Regular expression LOC Coord must match.
++
+       Regex = /^(\d+)\s(\d+)\s(\d+\.\d+)\s([NESW])$/
+ 
+       ##
+@@ -3313,6 +3441,7 @@ class Gem::Resolv
+         end
+       end
+ 
++      # Internal use; use self.create.
+       def initialize(coordinates,orientation)
+         unless coordinates.kind_of?(String)
+           raise ArgumentError.new("Coord must be a 32bit unsigned integer in hex format: #{coordinates.inspect}")
+@@ -3375,6 +3504,8 @@ class Gem::Resolv
+ 
+     class Alt
+ 
++      # Regular expression LOC Alt must match.
++
+       Regex = /^([+-]*\d+\.*\d*)[m]$/
+ 
+       ##
+@@ -3400,6 +3531,7 @@ class Gem::Resolv
+         end
+       end
+ 
++      # Internal use; use self.create.
+       def initialize(altitude)
+         @altitude = altitude
+       end
